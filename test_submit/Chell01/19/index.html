@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+
+<!--
+CASE1 在最初的默认值，需要指定#input的textarea输入为1\n2\n3\n4\n5\n，对应的#output的textarea输出值为输入的2倍，即2\n4\n6\n8\n10
+CASE2 要求#input和#output在同一行
+CASE3 接下来在点击#submit按钮之后，每隔300秒对动态变化的#input进行响应，计算方法为#input每行加1，并输出至#output的textarea中。例如测试2\n4\n5\n6\n8,输出值为3\n5\n6\n7\n9
+
+INPUT
+
+OUTPUT
+2
+3
+4
+8
+10
+12
+
+INPUT
+document.getElementById("input").getElementsByTagName("textarea")[0].innerHTML = "2\n4\n5\n6\n8"
+OUTPUT
+"3
+5
+6
+7
+9"
+
+-->
+
+
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<style>
+    .inline {
+        display: inline-block;
+    }
+    #submit_div {
+        width: 100%;
+    }
+</style>
+<script>
+    function doSubmit() {
+        setInterval(changeOutput, 300)
+    }
+
+    function changeOutput() {
+        let input = document.getElementById("input").getElementsByTagName("textarea")[0].innerHTML
+        let inputs = input.split("\n")
+        let outputs = []
+        for (let i = 0; i < inputs.length; i++) {
+            if (inputs[i] == NaN) {
+                continue
+            }
+            outputs[i] = parseInt(inputs[i]) + 1
+        }
+        let output = outputs.join("\n")
+        document.getElementById("output").getElementsByTagName("textarea")[0].innerHTML = output
+    }
+</script>
+<body>
+        <div id="input" class="inline">
+<textarea cols="5" rows="8">
+1
+2
+3
+4
+5
+6</textarea>
+        </div>
+
+        <div id="output" class="inline">
+<textarea cols="5" rows="8" disabled="disabled">
+2
+3
+4
+8
+10
+12</textarea>
+        </div>
+
+    <div id="submit_div">
+        <button id="submit" onclick="doSubmit()">运行</button>
+    </div>
+
+</body>
+</html>
