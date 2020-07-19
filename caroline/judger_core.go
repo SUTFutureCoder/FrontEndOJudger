@@ -3,7 +3,6 @@ package caroline
 import (
 	"FrontEndOJudger/models"
 	"FrontEndOJudger/pkg/setting"
-	"errors"
 	"fmt"
 	"log"
 	"sync"
@@ -67,11 +66,11 @@ func JudgeSubmit(submitId uint64) error {
 	testcases, err := models.GetTestcaseByIds(testcaseIds)
 
 	// 变更状态 乐观锁
-	rows, err := models.UpdateSubmitStatus(submitId, models.LABSUBMITSTATUS_PENDING, models.LABSUBMITSTATUS_JUDING)
-	if rows != 1 || err != nil {
-		log.Printf("change submit status error submitId:%d fromStatus:%d toStatus:%d err:%v", submitId, models.LABSUBMITSTATUS_PENDING, models.LABSUBMITSTATUS_JUDING, err)
-		return errors.New(fmt.Sprintf("change submit status error submitId:%d fromStatus:%d toStatus:%d err:%v", submitId, models.LABSUBMITSTATUS_PENDING, models.LABSUBMITSTATUS_JUDING, err))
-	}
+	//rows, err := models.UpdateSubmitStatus(submitId, models.LABSUBMITSTATUS_PENDING, models.LABSUBMITSTATUS_JUDING)
+	//if rows != 1 || err != nil {
+	//	log.Printf("change submit status error submitId:%d fromStatus:%d toStatus:%d err:%v", submitId, models.LABSUBMITSTATUS_PENDING, models.LABSUBMITSTATUS_JUDING, err)
+	//	return errors.New(fmt.Sprintf("change submit status error submitId:%d fromStatus:%d toStatus:%d err:%v", submitId, models.LABSUBMITSTATUS_PENDING, models.LABSUBMITSTATUS_JUDING, err))
+	//}
 
 	// 执行测试用例
 	testChamberFileName := WriteSubmitToFile(labSubmit)

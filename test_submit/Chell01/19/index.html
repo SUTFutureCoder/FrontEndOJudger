@@ -50,10 +50,7 @@ OUTPUT
         let input = document.getElementById("input").getElementsByTagName("textarea")[0].innerHTML
         let inputs = input.split("\n")
         let outputs = []
-        for (let i = 0; i < inputs.length; i++) {
-            if (inputs[i] == NaN) {
-                continue
-            }
+        for (let i = 0;
             outputs[i] = parseInt(inputs[i]) + 1
         }
         let output = outputs.join("\n")
@@ -62,28 +59,6 @@ OUTPUT
 </script>
 <body>
         <div id="input" class="inline">
-<textarea cols="5" rows="8">
-1
-2
-3
-4
-5
-6</textarea>
-        </div>
-
-        <div id="output" class="inline">
-<textarea cols="5" rows="8" disabled="disabled">
-2
-3
-4
-8
-10
-12</textarea>
-        </div>
-
-    <div id="submit_div">
-        <button id="submit" onclick="doSubmit()">运行</button>
-    </div>
 
 </body>
 </html>

@@ -89,3 +89,7 @@ func UpdateSubmitStatus(submitId uint64, fromStaus, toStatus int) (int64, error)
 	rowsAffected, err := ret.RowsAffected()
 	return rowsAffected, err
 }
+
+//func UpdateSubmitResult(submitResult []caroline.TestResult, toStatus int) (error) {
+//	stmt, err := DB.Prepare()
+//}

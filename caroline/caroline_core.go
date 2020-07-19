@@ -4,7 +4,9 @@ import (
 	"FrontEndOJudger/models"
 	"context"
 	"fmt"
+	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
+	"log"
 	"strings"
 	"time"
 )
@@ -34,17 +36,53 @@ func ExecCaroline(testChamber string, testcases []models.LabTestcase, id uint64)
 		}
 
 		var output interface{}
-		if err := chromedp.Run(ctx, runTests(testChamber, &testcase, &output)); err != nil {
-			testResult.Err = err.Error()
+
+		testCaseCtx := ctx
+		if testcase.TimeLimit != 0 {
+			var testCaseCancel context.CancelFunc
+			testCaseCtx, testCaseCancel = context.WithTimeout(ctx, time.Duration(testcase.TimeLimit) * time.Millisecond)
+			defer testCaseCancel()
 		}
+
+		// 控制台及异常监听
+		var exceptions *runtime.ExceptionDetails
+		chromedp.ListenTarget(testCaseCtx, func(ev interface{}) {
+			switch ev := ev.(type) {
+			case *runtime.EventExceptionThrown:
+				exceptions = ev.ExceptionDetails
+			}
+		})
+
+		if err := chromedp.Run(testCaseCtx, runTests(testChamber, &testcase, &output)); err != nil {
+			testResult.Err = err.Error()
+			testResult.Status = models.LABSUBMITSTATUS_ERROR
+			if testResult.Err == "context deadline exceeded" {
+				testResult.Status = models.LABSUBMITSTATUS_TIME_LIMIT_EXCEEDED
+			}
+			if strings.Contains(testResult.Err, "encountered exception 'Uncaught'") {
+				testResult.Status = models.LABSUBMITSTATUS_RUNTIME_ERROR
+				byteException, errException :=  exceptions.MarshalJSON()
+				if errException != nil {
+					testResult.Status = models.LABSUBMITSTATUS_SYSTEM_ERROR
+					testResult.Err = errException.Error()
+					continue
+				}
+				testResult.Err = string(byteException)
+			}
+			log.Printf("#### ERR err[%v] id[%d] testcase[%v] testResult[%v]", err, testcase.ID, testcase.TimeLimit, testResult)
+			continue
+		}
+
 
 		testResult.SubmitOutput = output.(string)
 		testResult.TestcaseOutput = testcase.Output
 
 		if output == testcase.Output {
 			testResult.Status = models.LABSUBMITSTATUS_ACCEPTED
+			log.Printf("#### ACC OUTPUT[%v] id[%d] TESTCASEOUTPUT[%v]", output, testcase.ID, testcase.Output)
 		} else {
 			testResult.Status = models.LABSUBMITSTATUS_WRONG_ANSWER
+			log.Printf("#### WA OUTPUT[%v] id[%v] TESTCASEOUTPUT[%v]", output, testcase.ID, testcase.Output)
 		}
 
 	}
