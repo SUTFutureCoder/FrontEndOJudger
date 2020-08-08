@@ -13,34 +13,37 @@ import (
 
 // 测试结果构造
 type TestResult struct {
-	Id uint64
-	TestCaseId int
-	SubmitOutput string
+	Id             uint64
+	TestCaseId     int
+	TestCaseInput  string
+	SubmitOutput   string
 	TestcaseOutput string
-	Status	int
-	Err 	string
+	Status         int
+	Err            string
 }
 
 //var ctx context.Context
-func ExecCaroline(testChamber string, testcases []models.LabTestcase, id uint64) []TestResult {
+func ExecCaroline(testChamber string, testcases []models.LabTestcase, id uint64) []*TestResult {
 	ctx, cancel := chromedp.NewContext(context.Background())
 	defer cancel()
 
-	var testResults []TestResult
+	var testResults []*TestResult
 
 	for testcaseId, testcase := range testcases {
 
 		testResult := TestResult{
-			Id:         id,
-			TestCaseId: testcaseId,
+			Id:            id,
+			TestCaseId:    testcaseId,
+			TestCaseInput: testcase.Input,
 		}
+		testResults = append(testResults, &testResult)
 
 		var output interface{}
 
 		testCaseCtx := ctx
 		if testcase.TimeLimit != 0 {
 			var testCaseCancel context.CancelFunc
-			testCaseCtx, testCaseCancel = context.WithTimeout(ctx, time.Duration(testcase.TimeLimit) * time.Millisecond)
+			testCaseCtx, testCaseCancel = context.WithTimeout(ctx, time.Duration(testcase.TimeLimit)*time.Millisecond)
 			defer testCaseCancel()
 		}
 
@@ -61,7 +64,7 @@ func ExecCaroline(testChamber string, testcases []models.LabTestcase, id uint64)
 			}
 			if strings.Contains(testResult.Err, "encountered exception 'Uncaught'") {
 				testResult.Status = models.LABSUBMITSTATUS_RUNTIME_ERROR
-				byteException, errException :=  exceptions.MarshalJSON()
+				byteException, errException := exceptions.MarshalJSON()
 				if errException != nil {
 					testResult.Status = models.LABSUBMITSTATUS_SYSTEM_ERROR
 					testResult.Err = errException.Error()
@@ -72,7 +75,6 @@ func ExecCaroline(testChamber string, testcases []models.LabTestcase, id uint64)
 			log.Printf("#### ERR err[%v] id[%d] testcase[%v] testResult[%v]", err, testcase.ID, testcase.TimeLimit, testResult)
 			continue
 		}
-
 
 		testResult.SubmitOutput = output.(string)
 		testResult.TestcaseOutput = testcase.Output

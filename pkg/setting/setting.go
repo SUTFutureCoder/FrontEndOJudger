@@ -7,7 +7,8 @@ import (
 
 type Judger struct {
 	TestChamberBaseDir string
-	JudgerSum int
+	JudgerSum          int
+	SleepTime          int
 }
 
 var JudgerSetting = &Judger{}
@@ -25,14 +26,13 @@ type Database struct {
 
 var DatabaseSetting = &Database{}
 
-
 var cfg *ini.File
 
 func Setup() {
 	var err error
 	cfg, err = ini.Load("conf/judger.ini")
 	if err != nil {
-		log.Fatalf("Judger setup failed, place check [conf/judger.init] file exist error:%v", err)
+		log.Fatalf("Judger setup failed, place check [conf/judger.ini] file exist error:%v", err)
 	}
 
 	mapTo("database", DatabaseSetting)

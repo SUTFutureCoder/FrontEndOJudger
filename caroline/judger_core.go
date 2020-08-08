@@ -3,44 +3,39 @@ package caroline
 import (
 	"FrontEndOJudger/models"
 	"FrontEndOJudger/pkg/setting"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
-	"sync"
 	"time"
 )
 
-var wg sync.WaitGroup
-
 func Judge() {
-	wg.Add(1)
 	// Step1 determine scan db or listen mq
 	ch := make(chan *models.LabSubmit, setting.JudgerSetting.JudgerSum)
 
 	// scan db
-	labSubmits, err := models.GetSubmitByStatus(models.LABSUBMITSTATUS_PENDING, setting.JudgerSetting.JudgerSum * 2)
+	labSubmits, err := models.GetSubmitByStatus(models.LABSUBMITSTATUS_PENDING, setting.JudgerSetting.JudgerSum)
 	if err != nil {
 		log.Printf("Get LabSubmits Error:%v", err)
 		return
 	}
 
-	for _, labSubmit := range labSubmits {
-		ch <- labSubmit
-		ch <- labSubmit
-		ch <- labSubmit
-		ch <- labSubmit
-	}
-
 	for i := 0; i < setting.JudgerSetting.JudgerSum; i++ {
 		go JudgeQueue(ch)
 	}
-	wg.Wait()
+
+	for _, labSubmit := range labSubmits {
+		ch <- labSubmit
+	}
+
 }
 
 func JudgeQueue(ch chan *models.LabSubmit) {
-	v := <- ch
-	fmt.Println((time.Now().UnixNano() / 1e6))
-	JudgeSubmit(v.ID)
-	fmt.Println((time.Now().UnixNano() / 1e6))
+	v := <-ch
+	fmt.Println(time.Now().UnixNano() / 1e6)
+	_ = JudgeSubmit(v.ID)
+	fmt.Println(time.Now().UnixNano() / 1e6)
 }
 
 func JudgeSubmit(submitId uint64) error {
@@ -66,17 +61,32 @@ func JudgeSubmit(submitId uint64) error {
 	testcases, err := models.GetTestcaseByIds(testcaseIds)
 
 	// 变更状态 乐观锁
-	//rows, err := models.UpdateSubmitStatus(submitId, models.LABSUBMITSTATUS_PENDING, models.LABSUBMITSTATUS_JUDING)
-	//if rows != 1 || err != nil {
-	//	log.Printf("change submit status error submitId:%d fromStatus:%d toStatus:%d err:%v", submitId, models.LABSUBMITSTATUS_PENDING, models.LABSUBMITSTATUS_JUDING, err)
-	//	return errors.New(fmt.Sprintf("change submit status error submitId:%d fromStatus:%d toStatus:%d err:%v", submitId, models.LABSUBMITSTATUS_PENDING, models.LABSUBMITSTATUS_JUDING, err))
-	//}
+	rows, err := models.UpdateSubmitStatusResult(submitId, models.LABSUBMITSTATUS_PENDING, models.LABSUBMITSTATUS_JUDING, "")
+	if rows != 1 || err != nil {
+		log.Printf("change submit status error submitId:%d fromStatus:%d toStatus:%d rows:%d err:%v", submitId, models.LABSUBMITSTATUS_PENDING, models.LABSUBMITSTATUS_JUDING, rows, err)
+		return errors.New(fmt.Sprintf("change submit status error submitId:%d fromStatus:%d toStatus:%d rows:%d err:%v", submitId, models.LABSUBMITSTATUS_PENDING, models.LABSUBMITSTATUS_JUDING, rows, err))
+	}
 
 	// 执行测试用例
 	testChamberFileName := WriteSubmitToFile(labSubmit)
 	testResults := ExecCaroline("file://"+testChamberFileName, testcases, submitId)
 
-	// 获取测试结果
-	_ = testResults
+	// 获取测试结果 更新结果
+	labSubmit.Status = models.LABSUBMITSTATUS_ACCEPTED
+	for _, v := range testResults {
+		// 如果有错误按照最后一个为准
+		if v.Status != models.LABSUBMITSTATUS_ACCEPTED {
+			labSubmit.Status = v.Status
+		}
+	}
+	jsonByte, err := json.Marshal(testResults)
+	labSubmit.SubmitResult = string(jsonByte)
+	// 更新结果
+	rows, err = models.UpdateSubmitStatusResult(submitId, models.LABSUBMITSTATUS_JUDING, labSubmit.Status, labSubmit.SubmitResult)
+	if rows != 1 || err != nil {
+		log.Printf("change submit status and result error submitId:%d fromStatus:%d toStatus:%d submitresult:%v err:%v", submitId, models.LABSUBMITSTATUS_PENDING, models.LABSUBMITSTATUS_JUDING, labSubmit.SubmitResult, err)
+		return errors.New(fmt.Sprintf("change submit status error submitId:%d fromStatus:%d toStatus:%d submitresult:%v err:%v", submitId, models.LABSUBMITSTATUS_PENDING, models.LABSUBMITSTATUS_JUDING, labSubmit.SubmitResult, err))
+	}
+	log.Println(labSubmit.SubmitResult)
 	return nil
 }

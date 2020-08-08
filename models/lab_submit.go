@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 // LabSubmit 提交表
 type LabSubmit struct {
 	Model
@@ -61,35 +63,32 @@ func GetSubmitById(submitId uint64) (*LabSubmit, error) {
 func GetSubmitByStatus(status, size int) ([]*LabSubmit, error) {
 	stmt, err := DB.Prepare("SELECT id, lab_id, submit_data, submit_result, status, creator, create_time, update_time FROM lab_submit WHERE status = ? LIMIT ?")
 	rows, err := stmt.Query(
-			&status,
-			&size,
-		)
+		&status,
+		&size,
+	)
 	defer rows.Close()
 	var labSubmits []*LabSubmit
 	for rows.Next() {
 		var labSubmit LabSubmit
 		rows.Scan(
-				&labSubmit.ID,
-				&labSubmit.LabID,
-				&labSubmit.SubmitData,
-				&labSubmit.SubmitResult,
-				&labSubmit.Status,
-				&labSubmit.Creator,
-				&labSubmit.CreateTime,
-				&labSubmit.UpdateTime,
-			)
+			&labSubmit.ID,
+			&labSubmit.LabID,
+			&labSubmit.SubmitData,
+			&labSubmit.SubmitResult,
+			&labSubmit.Status,
+			&labSubmit.Creator,
+			&labSubmit.CreateTime,
+			&labSubmit.UpdateTime,
+		)
 		labSubmits = append(labSubmits, &labSubmit)
 	}
 	return labSubmits, err
 }
 
-func UpdateSubmitStatus(submitId uint64, fromStaus, toStatus int) (int64, error) {
-	stmt, err := DB.Prepare("UPDATE lab_submit SET status=? WHERE status=? AND id=?")
-	ret, err := stmt.Exec(&toStatus, &fromStaus, &submitId)
+func UpdateSubmitStatusResult(submitId uint64, fromStatus, toStatus int, submitResult string) (int64, error) {
+	stmt, err := DB.Prepare("UPDATE lab_submit SET status=?, submit_result=?, update_time=? WHERE status=? AND id=?")
+	updateTime := time.Now().UnixNano() / 1e6
+	ret, err := stmt.Exec(&toStatus, &submitResult, &updateTime, &fromStatus, &submitId)
 	rowsAffected, err := ret.RowsAffected()
 	return rowsAffected, err
 }
-
-//func UpdateSubmitResult(submitResult []caroline.TestResult, toStatus int) (error) {
-//	stmt, err := DB.Prepare()
-//}
