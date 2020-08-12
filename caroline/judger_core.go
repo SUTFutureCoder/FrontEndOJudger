@@ -69,6 +69,11 @@ func JudgeSubmit(submitId uint64) error {
 
 	// 执行测试用例
 	testChamberFileName := WriteSubmitToFile(labSubmit)
+
+	// 记录执行时间
+
+
+	// 实际执行
 	testResults := ExecCaroline("file://"+testChamberFileName, testcases, submitId)
 
 	// 获取测试结果 更新结果

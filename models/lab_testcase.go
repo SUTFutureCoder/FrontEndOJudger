@@ -1,7 +1,6 @@
 package models
 
 import (
-	"database/sql"
 	"strings"
 )
 
@@ -36,22 +35,4 @@ func GetTestcaseByIds(testcaseIds []interface{}) ([]LabTestcase, error) {
 	rows.Close()
 	return testcases, err
 
-}
-
-func (labTestCase *LabTestcase) Insert(tx *sql.Tx) (int64, error) {
-	stmt, err := tx.Prepare("INSERT INTO lab_testcase (testcase_desc, testcase_code, input, output, time_limit, mem_limit, wait_before, creator, create_time) VALUES (?,?,?,?,?,?,?,?,?)")
-	result, err := stmt.Exec(
-		labTestCase.TestcaseDesc,
-		labTestCase.TestcaseCode,
-		labTestCase.Input,
-		labTestCase.Output,
-		labTestCase.TimeLimit,
-		labTestCase.MemLimit,
-		labTestCase.WaitBefore,
-		labTestCase.Creator,
-		labTestCase.CreateTime,
-	)
-
-	labTestCaseLastId, err := result.LastInsertId()
-	return labTestCaseLastId, err
 }

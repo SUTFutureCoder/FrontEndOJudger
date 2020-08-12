@@ -1,7 +1,6 @@
 package models
 
 import (
-	"database/sql"
 	"strconv"
 )
 
@@ -27,17 +26,4 @@ func GetLabTestcaseMapByLabId(labId uint64) ([]interface{}, error) {
 		testcaseIds = append(testcaseIds, strconv.Itoa(testcaseId))
 	}
 	return testcaseIds, err
-}
-
-func (labTestCaseMap *LabTestcaseMap) Insert(tx *sql.Tx) (sql.Result, error) {
-	stmt, err := tx.Prepare("INSERT INTO lab_testcase_map (lab_id, testcase_id, creator, create_time) VALUES (?,?,?,?)")
-	defer stmt.Close()
-	result, err := stmt.Exec(
-		labTestCaseMap.LabID,
-		labTestCaseMap.TestcaseID,
-		labTestCaseMap.Creator,
-		labTestCaseMap.CreateTime,
-	)
-	return result, err
-
 }

@@ -11,6 +11,8 @@ type LabSubmit struct {
 	SubmitData string `json:"submit_data"`
 	// SubmitResult 提交结果
 	SubmitResult string `json:"submit_result"`
+	// SubmitTimeUsage 消耗时间
+	SubmitTimeUsage int64 `json:"submit_time_usage"`
 }
 
 /**
@@ -53,15 +55,15 @@ const (
 )
 
 func GetSubmitById(submitId uint64) (*LabSubmit, error) {
-	stmt, err := DB.Prepare("SELECT id, lab_id, submit_data, submit_result, status, creator, create_time, update_time FROM lab_submit WHERE id = ? AND status = 1")
+	stmt, err := DB.Prepare("SELECT id, lab_id, submit_data, submit_result, submit_time_usage, status, creator, create_time, update_time FROM lab_submit WHERE id = ? AND status = 1")
 	row := stmt.QueryRow(&submitId)
 	labSubmit := new(LabSubmit)
-	row.Scan(&labSubmit.ID, &labSubmit.LabID, &labSubmit.SubmitData, &labSubmit.SubmitResult, &labSubmit.Status, &labSubmit.Creator, &labSubmit.CreateTime, &labSubmit.UpdateTime)
+	row.Scan(&labSubmit.ID, &labSubmit.LabID, &labSubmit.SubmitData, &labSubmit.SubmitResult, &labSubmit.SubmitTimeUsage, &labSubmit.Status, &labSubmit.Creator, &labSubmit.CreateTime, &labSubmit.UpdateTime)
 	return labSubmit, err
 }
 
 func GetSubmitByStatus(status, size int) ([]*LabSubmit, error) {
-	stmt, err := DB.Prepare("SELECT id, lab_id, submit_data, submit_result, status, creator, create_time, update_time FROM lab_submit WHERE status = ? LIMIT ?")
+	stmt, err := DB.Prepare("SELECT id, lab_id, submit_data, submit_result, submit_time_usage, status, creator, create_time, update_time FROM lab_submit WHERE status = ? LIMIT ?")
 	rows, err := stmt.Query(
 		&status,
 		&size,
@@ -75,6 +77,7 @@ func GetSubmitByStatus(status, size int) ([]*LabSubmit, error) {
 			&labSubmit.LabID,
 			&labSubmit.SubmitData,
 			&labSubmit.SubmitResult,
+			&labSubmit.SubmitTimeUsage,
 			&labSubmit.Status,
 			&labSubmit.Creator,
 			&labSubmit.CreateTime,

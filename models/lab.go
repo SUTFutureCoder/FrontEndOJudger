@@ -1,9 +1,5 @@
 package models
 
-import (
-	"log"
-)
-
 // Lab 实验室表
 type Lab struct {
 	Model
@@ -25,23 +21,6 @@ const (
 	LABTYPE_COMPLEX
 	LABTYPE_PRD
 	LABTYPE_IMITATE
+	LABTYPE_SECURITY
 	LABTYPE_OTHER
 )
-
-func (lab *Lab) Insert() error {
-	stmt, err := DB.Prepare("INSERT INTO lab (lab_name, lab_desc, lab_type, lab_sample, creator, create_time) VALUES(?,?,?,?,?,?)")
-	defer stmt.Close()
-	if err != nil {
-		log.Printf("[ERROR] database exec error input[%v] err[%v]", lab, err)
-		return err
-	}
-	_, err = stmt.Exec(
-		lab.LabName,
-		lab.LabDesc,
-		lab.LabType,
-		lab.LabSample,
-		lab.Creator,
-		lab.CreateTime,
-	)
-	return nil
-}
