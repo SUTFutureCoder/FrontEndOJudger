@@ -6,9 +6,15 @@ import (
 )
 
 type Judger struct {
-	TestChamberBaseDir string
 	JudgerSum          int
 	SleepTime          int
+
+	TestChamberSwitch bool
+	TestChamberBaseDir string
+	TestChamberDir string
+	TestChamberAddr string
+	TestChamberPort string
+
 }
 
 var JudgerSetting = &Judger{}

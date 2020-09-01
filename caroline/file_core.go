@@ -11,15 +11,16 @@ import (
 /**
 写入本地磁盘 ./test_chamber/{creator}/{submitid}
 */
-func WriteSubmitToFile(labSubmit *models.LabSubmit) string {
-	testChanberDirName := fmt.Sprintf("%s/test_submit/%s/%d/", setting.JudgerSetting.TestChamberBaseDir, labSubmit.Creator, labSubmit.ID)
-	testChamberFileName := fmt.Sprintf("%sindex.html", testChanberDirName)
+func WriteSubmitToFile(labSubmit *models.LabSubmit) (string, string) {
+	testChamberDirName := fmt.Sprintf("%s/%s/%s/%d/", setting.JudgerSetting.TestChamberBaseDir, setting.JudgerSetting.TestChamberDir, labSubmit.Creator, labSubmit.ID)
+	testChamberFileName := fmt.Sprintf("%sindex.html", testChamberDirName)
+	testChamberUrlName := fmt.Sprintf("%s/%d", labSubmit.Creator, labSubmit.ID)
 	// 检查是否存在
 	_, err := os.Stat(testChamberFileName)
 	if err == nil || os.IsExist(err) {
-		return testChamberFileName
+		return testChamberFileName, ""
 	}
-	os.MkdirAll(testChanberDirName, 0777)
+	os.MkdirAll(testChamberDirName, 0777)
 	ioutil.WriteFile(testChamberFileName, []byte(labSubmit.SubmitData), 0777)
-	return testChamberFileName
+	return testChamberFileName, testChamberUrlName
 }

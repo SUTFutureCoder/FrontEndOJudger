@@ -62,7 +62,7 @@ func ExecCaroline(testChamber string, testcases []models.LabTestcase, id uint64)
 			if testResult.Err == "context deadline exceeded" {
 				testResult.Status = models.LABSUBMITSTATUS_TIME_LIMIT_EXCEEDED
 			}
-			if strings.Contains(testResult.Err, "encountered exception 'Uncaught'") {
+			if strings.Contains(testResult.Err, "encountered exception 'Uncaught'") && exceptions != nil{
 				testResult.Status = models.LABSUBMITSTATUS_RUNTIME_ERROR
 				byteException, errException := exceptions.MarshalJSON()
 				if errException != nil {

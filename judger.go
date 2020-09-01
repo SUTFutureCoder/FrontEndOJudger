@@ -4,6 +4,8 @@ import (
 	"FrontEndOJudger/caroline"
 	"FrontEndOJudger/models"
 	"FrontEndOJudger/pkg/setting"
+	"fmt"
+	"net/http"
 	"runtime"
 	"time"
 )
@@ -14,6 +16,12 @@ func main() {
 	setting.Setup()
 	models.Setup()
 	runtime.GOMAXPROCS(runtime.NumCPU())
+
+	// start static file when run test chamber local
+	if setting.JudgerSetting.TestChamberSwitch {
+		http.Handle("/", http.FileServer(http.Dir(fmt.Sprintf("./%s", setting.JudgerSetting.TestChamberDir))))
+		go http.ListenAndServe(fmt.Sprintf(":%s", setting.JudgerSetting.TestChamberPort), nil)
+	}
 
 	for {
 		caroline.Judge()

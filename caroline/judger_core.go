@@ -68,13 +68,14 @@ func JudgeSubmit(submitId uint64) error {
 	}
 
 	// 执行测试用例
-	testChamberFileName := WriteSubmitToFile(labSubmit)
+	_, testChamberUrlName := WriteSubmitToFile(labSubmit)
 
 	// 记录执行时间
 
 
 	// 实际执行
-	testResults := ExecCaroline("file://"+testChamberFileName, testcases, submitId)
+	//testResults := ExecCaroline("file://"+testChamberFileName, testcases, submitId)
+	testResults := ExecCaroline(fmt.Sprintf("%s/%s" + setting.JudgerSetting.TestChamberAddr, testChamberUrlName), testcases, submitId)
 
 	// 获取测试结果 更新结果
 	labSubmit.Status = models.LABSUBMITSTATUS_ACCEPTED
