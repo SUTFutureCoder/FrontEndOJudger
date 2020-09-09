@@ -9,12 +9,12 @@ import (
 )
 
 /**
-写入本地磁盘 ./test_chamber/{creator}/{submitid}
+写入本地磁盘 ./test_chamber/{submitid}
 */
 func WriteSubmitToFile(labSubmit *models.LabSubmit) (string, string) {
-	testChamberDirName := fmt.Sprintf("%s/%s/%s/%d/", setting.JudgerSetting.TestChamberBaseDir, setting.JudgerSetting.TestChamberDir, labSubmit.Creator, labSubmit.ID)
+	testChamberDirName := fmt.Sprintf("%s/%s/%d/", setting.JudgerSetting.TestChamberBaseDir, setting.JudgerSetting.TestChamberDir, labSubmit.ID)
 	testChamberFileName := fmt.Sprintf("%sindex.html", testChamberDirName)
-	testChamberUrlName := fmt.Sprintf("%s/%d", labSubmit.Creator, labSubmit.ID)
+	testChamberUrlName := fmt.Sprintf("%d", labSubmit.ID)
 	// 检查是否存在
 	_, err := os.Stat(testChamberFileName)
 	if err == nil || os.IsExist(err) {

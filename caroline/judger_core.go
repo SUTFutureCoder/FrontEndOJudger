@@ -54,7 +54,8 @@ func JudgeSubmit(submitId uint64) error {
 	// 获取case信息
 	testcaseIds, err := models.GetLabTestcaseMapByLabId(labSubmit.LabID)
 	if len(testcaseIds) == 0 {
-		return nil
+		// 如果没有testcase直接判定AC
+		return updateSubmitStatus(submitId, models.LABSUBMITSTATUS_PENDING, models.LABSUBMITSTATUS_NO_TESTCASE, labSubmit)
 	}
 
 	// 获取testcase详情
@@ -62,7 +63,7 @@ func JudgeSubmit(submitId uint64) error {
 
 	// 变更状态 乐观锁
 	rows, err := models.UpdateSubmitStatusResult(submitId, models.LABSUBMITSTATUS_PENDING, models.LABSUBMITSTATUS_JUDING, "")
-	if rows != 1 || err != nil {
+	if err != nil {
 		log.Printf("change submit status error submitId:%d fromStatus:%d toStatus:%d rows:%d err:%v", submitId, models.LABSUBMITSTATUS_PENDING, models.LABSUBMITSTATUS_JUDING, rows, err)
 		return errors.New(fmt.Sprintf("change submit status error submitId:%d fromStatus:%d toStatus:%d rows:%d err:%v", submitId, models.LABSUBMITSTATUS_PENDING, models.LABSUBMITSTATUS_JUDING, rows, err))
 	}
@@ -72,10 +73,9 @@ func JudgeSubmit(submitId uint64) error {
 
 	// 记录执行时间
 
-
 	// 实际执行
 	//testResults := ExecCaroline("file://"+testChamberFileName, testcases, submitId)
-	testResults := ExecCaroline(fmt.Sprintf("%s/%s" + setting.JudgerSetting.TestChamberAddr, testChamberUrlName), testcases, submitId)
+	testResults := ExecCaroline(fmt.Sprintf("%s/%s", setting.JudgerSetting.TestChamberAddr, testChamberUrlName), testcases, submitId)
 
 	// 获取测试结果 更新结果
 	labSubmit.Status = models.LABSUBMITSTATUS_ACCEPTED
@@ -87,11 +87,16 @@ func JudgeSubmit(submitId uint64) error {
 	}
 	jsonByte, err := json.Marshal(testResults)
 	labSubmit.SubmitResult = string(jsonByte)
+
 	// 更新结果
-	rows, err = models.UpdateSubmitStatusResult(submitId, models.LABSUBMITSTATUS_JUDING, labSubmit.Status, labSubmit.SubmitResult)
-	if rows != 1 || err != nil {
-		log.Printf("change submit status and result error submitId:%d fromStatus:%d toStatus:%d submitresult:%v err:%v", submitId, models.LABSUBMITSTATUS_PENDING, models.LABSUBMITSTATUS_JUDING, labSubmit.SubmitResult, err)
-		return errors.New(fmt.Sprintf("change submit status error submitId:%d fromStatus:%d toStatus:%d submitresult:%v err:%v", submitId, models.LABSUBMITSTATUS_PENDING, models.LABSUBMITSTATUS_JUDING, labSubmit.SubmitResult, err))
+	return updateSubmitStatus(submitId, models.LABSUBMITSTATUS_JUDING, labSubmit.Status, labSubmit)
+}
+
+func updateSubmitStatus(submitId uint64, fromStatus, toStatus int, labSubmit *models.LabSubmit) error {
+	_, err := models.UpdateSubmitStatusResult(submitId, fromStatus, toStatus, labSubmit.SubmitResult)
+	if err != nil {
+		log.Printf("change submit status and result error submitId:%d fromStatus:%d toStatus:%d submitresult:%v err:%v", submitId, fromStatus, labSubmit.Status, labSubmit.SubmitResult, err)
+		return errors.New(fmt.Sprintf("change submit status error submitId:%d fromStatus:%d toStatus:%d submitresult:%v err:%v", submitId, fromStatus, labSubmit.Status, labSubmit.SubmitResult, err))
 	}
 	log.Println(labSubmit.SubmitResult)
 	return nil
