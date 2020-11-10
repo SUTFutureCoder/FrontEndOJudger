@@ -75,7 +75,7 @@ func JudgeSubmit(submitId uint64) error {
 
 	// 实际执行
 	//testResults := ExecCaroline("file://"+testChamberFileName, testcases, submitId)
-	testResults := ExecCaroline(fmt.Sprintf("%s/%s", setting.JudgerSetting.TestChamberAddr, testChamberUrlName), testcases, submitId)
+	testResults := ExecCaroline(fmt.Sprintf("%s:%s/%s", setting.JudgerSetting.TestChamberAddr, setting.JudgerSetting.TestChamberPort, testChamberUrlName), testcases, submitId)
 
 	// 获取测试结果 更新结果
 	labSubmit.Status = models.LABSUBMITSTATUS_ACCEPTED

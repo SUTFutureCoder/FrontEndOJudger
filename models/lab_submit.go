@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 // LabSubmit 提交表
 type LabSubmit struct {
@@ -63,12 +66,50 @@ func GetSubmitById(submitId uint64) (*LabSubmit, error) {
 	return labSubmit, err
 }
 
+func GetExpiredJudgingSubmits(size int) ([]*LabSubmit, error) {
+	// 10 min ago
+	safeTime := time.Now().UnixNano() / 1e6 - 60 * 10 * 1000
+
+	var expiredJudgingStatus []interface{}
+	expiredJudgingStatus = append(expiredJudgingStatus,
+		LABSUBMITSTATUS_COMPILING,
+		LABSUBMITSTATUS_JUDING,
+		)
+
+	var args []interface{}
+	args = append(args, expiredJudgingStatus...)
+	args = append(args, safeTime, size)
+
+	stmt, err := DB.Query("SELECT id, lab_id, submit_data, submit_result, submit_time_usage, status, creator, create_time, update_time FROM lab_submit WHERE status IN (?"+strings.Repeat(",?", len(expiredJudgingStatus)-1)+") AND create_time <= ? LIMIT ?", args...)
+	defer stmt.Close()
+	var labSubmits []*LabSubmit
+	for stmt.Next() {
+		var labSubmit LabSubmit
+		stmt.Scan(
+			&labSubmit.ID,
+			&labSubmit.LabID,
+			&labSubmit.SubmitData,
+			&labSubmit.SubmitResult,
+			&labSubmit.SubmitTimeUsage,
+			&labSubmit.Status,
+			&labSubmit.Creator,
+			&labSubmit.CreateTime,
+			&labSubmit.UpdateTime,
+		)
+		labSubmits = append(labSubmits, &labSubmit)
+	}
+	return labSubmits, err
+}
+
 func GetSubmitByStatus(status, size int) ([]*LabSubmit, error) {
 	stmt, err := DB.Prepare("SELECT id, lab_id, submit_data, submit_result, submit_time_usage, status, creator, create_time, update_time FROM lab_submit WHERE status = ? LIMIT ?")
 	rows, err := stmt.Query(
 		&status,
 		&size,
 	)
+	if err != nil {
+
+	}
 	defer rows.Close()
 	var labSubmits []*LabSubmit
 	for rows.Next() {

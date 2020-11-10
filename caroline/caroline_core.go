@@ -7,6 +7,7 @@ import (
 	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -76,20 +77,48 @@ func ExecCaroline(testChamber string, testcases []models.LabTestcase, id uint64)
 			continue
 		}
 
-		testResult.SubmitOutput = output.(string)
+		if o, ok := output.(string); ok {
+			testResult.SubmitOutput = o
+		}
+
+		if o, ok := output.(float64); ok {
+			testResult.SubmitOutput = strconv.FormatFloat(o,'f',-1,64)
+		}
+
+		if o, ok := output.(int64); ok {
+			testResult.SubmitOutput = strconv.FormatInt(o, 10)
+		}
+
+		if o, ok := output.(bool); ok {
+			testResult.SubmitOutput = strconv.FormatBool(o)
+		}
+
+		if o, ok := output.(uint64); ok {
+			testResult.SubmitOutput = strconv.FormatUint(o, 10)
+		}
+
+
 		testResult.TestcaseOutput = testcase.Output
 
-		if output == testcase.Output {
+		if testResult.SubmitOutput == testcase.Output {
 			testResult.Status = models.LABSUBMITSTATUS_ACCEPTED
-			log.Printf("#### ACC OUTPUT[%v] id[%d] TESTCASEOUTPUT[%v]", output, testcase.ID, testcase.Output)
+			log.Printf("#### ACC OUTPUT[%v] id[%d] TESTCASEOUTPUT[%v]", testResult.SubmitOutput, testcase.ID, testcase.Output)
 		} else {
 			testResult.Status = models.LABSUBMITSTATUS_WRONG_ANSWER
-			log.Printf("#### WA OUTPUT[%v] id[%v] TESTCASEOUTPUT[%v]", output, testcase.ID, testcase.Output)
+			log.Printf("#### WA OUTPUT[%v] id[%v] TESTCASEOUTPUT[%v]", testResult.SubmitOutput, testcase.ID, testcase.Output)
 		}
 
 	}
 
 	return testResults
+}
+
+func RunWithTimeOut(ctx *context.Context, timeout time.Duration, tasks chromedp.Tasks) chromedp.ActionFunc {
+	return func(ctx context.Context) error {
+		timeoutContext, cancel := context.WithTimeout(ctx, timeout * time.Second)
+		defer cancel()
+		return tasks.Do(timeoutContext)
+	}
 }
 
 func runTests(url string, labTestcase *models.LabTestcase, output *interface{}) chromedp.Action {

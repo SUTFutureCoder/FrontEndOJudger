@@ -12,7 +12,7 @@ import (
 
 func main() {
 
-	// 执行核心judger逻辑
+	// exec main judge logic
 	setting.Setup()
 	models.Setup()
 	runtime.GOMAXPROCS(runtime.NumCPU())
@@ -23,7 +23,16 @@ func main() {
 		go http.ListenAndServe(fmt.Sprintf(":%s", setting.JudgerSetting.TestChamberPort), nil)
 	}
 
+	// fix expired judging submits while judger was crashed unexpectedly
+	go func() {
+		for {
+			caroline.FixExpiredJudgingSubmits()
+			time.Sleep(time.Duration(setting.JudgerSetting.SleepTime * 10) * time.Millisecond)
+		}
+	}()
+
 	for {
+		// main judge process
 		caroline.Judge()
 		time.Sleep(time.Duration(setting.JudgerSetting.SleepTime) * time.Millisecond)
 	}
