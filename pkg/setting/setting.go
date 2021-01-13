@@ -1,8 +1,10 @@
 package setting
 
 import (
+	"fmt"
 	"github.com/go-ini/ini"
 	"log"
+	"os"
 )
 
 type Judger struct {
@@ -50,4 +52,42 @@ func mapTo(s string, v interface{}) {
 	if err != nil {
 		log.Fatalf("Cfg.MapTo %s err: %v", s, err)
 	}
+}
+
+/**
+ check and repair settings if not correct
+ */
+func Check() {
+	checkJudger()
+}
+
+func checkJudger() {
+	// check judger TestChamberBaseDir
+	testchamber := fmt.Sprintf("%s/%s", JudgerSetting.TestChamberBaseDir, JudgerSetting.TestChamberDir)
+	_, err := os.Stat(testchamber)
+	if err == nil || os.IsExist(err) {
+		return
+	}
+	// try create dir if not exist
+	err = os.MkdirAll(testchamber, 0777)
+	if err == nil {
+		return
+	}
+
+	// failed to create dir but try user home dir
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatalf("Can not create target dir and your home dir, please check your TestChamberBaseDir config(%s) in conf/judger.ini was set correctly.", JudgerSetting.TestChamberBaseDir)
+		return
+	}
+
+	// correct to home dir
+	JudgerSetting.TestChamberBaseDir = fmt.Sprintf("%s/FrontEndOJudger", homeDir)
+	testchamber = fmt.Sprintf("%s/%s", JudgerSetting.TestChamberBaseDir, JudgerSetting.TestChamberDir)
+	err = os.MkdirAll(testchamber, 0777)
+	if err != nil {
+		log.Fatalf("Can not create target dir and your home dir(%s), please check your TestChamberBaseDir config in conf/judger.ini was set correctly.", homeDir)
+		return
+	}
+
 }

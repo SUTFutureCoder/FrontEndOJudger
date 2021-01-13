@@ -69,7 +69,10 @@ func JudgeSubmit(submitId uint64) error {
 	}
 
 	// 执行测试用例
-	_, testChamberUrlName := WriteSubmitToFile(labSubmit)
+	_, testChamberUrlName, err := WriteSubmitToFile(labSubmit)
+	if err != nil {
+		return err
+	}
 
 	// 记录执行时间
 

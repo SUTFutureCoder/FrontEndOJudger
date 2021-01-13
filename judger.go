@@ -14,12 +14,13 @@ func main() {
 
 	// exec main judge logic
 	setting.Setup()
+	setting.Check()
 	models.Setup()
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	// start static file when run test chamber local
 	if setting.JudgerSetting.TestChamberSwitch {
-		http.Handle("/", http.FileServer(http.Dir(fmt.Sprintf("./%s", setting.JudgerSetting.TestChamberDir))))
+		http.Handle("/", http.FileServer(http.Dir(fmt.Sprintf("%s/%s", setting.JudgerSetting.TestChamberBaseDir, setting.JudgerSetting.TestChamberDir))))
 		go http.ListenAndServe(fmt.Sprintf(":%s", setting.JudgerSetting.TestChamberPort), nil)
 	}
 
