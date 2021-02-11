@@ -8,9 +8,9 @@ import (
 type LabTestcaseMap struct {
 	Model
 	// LabID 实验室id
-	LabID int64 `json:"lab_id"`
+	LabID uint64 `json:"lab_id"`
 	// TestcaseID 测试用例id
-	TestcaseID int64 `json:"testcase_id"`
+	TestcaseID uint64 `json:"testcase_id"`
 }
 
 func GetLabTestcaseMapByLabId(labId uint64) ([]interface{}, error) {

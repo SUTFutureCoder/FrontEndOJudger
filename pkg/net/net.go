@@ -27,6 +27,6 @@ func Writer(w http.ResponseWriter, code int, msg string, data interface{}) {
 	resp.Msg = msg
 	resp.Data = data
 	jsonResp, _ := json.Marshal(resp)
-	w.Write(jsonResp)
+ 	w.Write(jsonResp)
 }
 
