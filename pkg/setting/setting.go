@@ -7,16 +7,17 @@ import (
 	"os"
 )
 
+const FRONTENDOJUDGER = "FrontEndOJudger"
+
 type Judger struct {
 	JudgerSum          int
 	SleepTime          int
 
 	TestChamberSwitch bool
 	TestChamberBaseDir string
-	TestChamberDir string
 	TestChamberAddr string
 	TestChamberPort string
-
+	HttpJudgerPort string
 }
 
 var JudgerSetting = &Judger{}
@@ -59,35 +60,43 @@ func mapTo(s string, v interface{}) {
  */
 func Check() {
 	checkJudger()
+	//checkLogger()
 }
 
-func checkJudger() {
-	// check judger TestChamberBaseDir
-	testchamber := fmt.Sprintf("%s/%s", JudgerSetting.TestChamberBaseDir, JudgerSetting.TestChamberDir)
-	_, err := os.Stat(testchamber)
+
+func checkAndFixDirExists(targetDir string, suffix string) string {
+	_, err := os.Stat(targetDir)
 	if err == nil || os.IsExist(err) {
-		return
+		return targetDir
 	}
 	// try create dir if not exist
-	err = os.MkdirAll(testchamber, 0777)
+	err = os.MkdirAll(targetDir, 0777)
 	if err == nil {
-		return
+		return targetDir
 	}
 
 	// failed to create dir but try user home dir
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		log.Fatalf("Can not create target dir and your home dir, please check your TestChamberBaseDir config(%s) in conf/judger.ini was set correctly.", JudgerSetting.TestChamberBaseDir)
-		return
+		log.Fatalf("Can not create target dir and your home dir, please check your config in conf/*.ini was set correctly.")
 	}
-
-	// correct to home dir
-	JudgerSetting.TestChamberBaseDir = fmt.Sprintf("%s/FrontEndOJudger", homeDir)
-	testchamber = fmt.Sprintf("%s/%s", JudgerSetting.TestChamberBaseDir, JudgerSetting.TestChamberDir)
-	err = os.MkdirAll(testchamber, 0777)
-	if err != nil {
-		log.Fatalf("Can not create target dir and your home dir(%s), please check your TestChamberBaseDir config in conf/judger.ini was set correctly.", homeDir)
-		return
+	newDir := fmt.Sprintf("%s/%s", homeDir, suffix)
+	// try create dir if not exist
+	err = os.MkdirAll(newDir, 0777)
+	if err == nil {
+		return newDir
 	}
+	log.Fatalf("Can not create home dir, please check your config in conf/*.ini was set correctly.")
+	return ""
+}
 
+
+//func checkLogger() {
+//	// check log dir
+//	JudgerSetting.JudgerLogBaseDir = fmt.Sprintf("%s/%s", checkAndFixDirExists(JudgerSetting.JudgerLogBaseDir), JudgerSetting.JudgerLogDir)
+//}
+
+func checkJudger() {
+	// check judger TestChamberBaseDir
+	JudgerSetting.TestChamberBaseDir = checkAndFixDirExists(JudgerSetting.TestChamberBaseDir, "test_submit")
 }

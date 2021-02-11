@@ -19,7 +19,7 @@ func GetLabTestcaseMapByLabId(labId uint64) ([]interface{}, error) {
 	rows, err := stmt.Query(
 		&labId,
 	)
-	defer rows.Close()
+	defer stmt.Close()
 	for rows.Next() {
 		var testcaseId int
 		rows.Scan(&testcaseId)

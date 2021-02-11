@@ -1,6 +1,7 @@
 package models
 
 import (
+	"log"
 	"strings"
 	"time"
 )
@@ -60,6 +61,7 @@ const (
 
 func GetSubmitById(submitId uint64) (*LabSubmit, error) {
 	stmt, err := DB.Prepare("SELECT id, lab_id, submit_data, submit_result, submit_time_usage, status, creator, create_time, update_time FROM lab_submit WHERE id = ? AND status = 1")
+	defer stmt.Close()
 	row := stmt.QueryRow(&submitId)
 	labSubmit := new(LabSubmit)
 	row.Scan(&labSubmit.ID, &labSubmit.LabID, &labSubmit.SubmitData, &labSubmit.SubmitResult, &labSubmit.SubmitTimeUsage, &labSubmit.Status, &labSubmit.Creator, &labSubmit.CreateTime, &labSubmit.UpdateTime)
@@ -103,6 +105,7 @@ func GetExpiredJudgingSubmits(size int) ([]*LabSubmit, error) {
 
 func GetSubmitByStatus(status, size int) ([]*LabSubmit, error) {
 	stmt, err := DB.Prepare("SELECT id, lab_id, submit_data, submit_result, submit_time_usage, status, creator, create_time, update_time FROM lab_submit WHERE status = ? LIMIT ?")
+	defer stmt.Close()
 	rows, err := stmt.Query(
 		&status,
 		&size,
@@ -110,7 +113,6 @@ func GetSubmitByStatus(status, size int) ([]*LabSubmit, error) {
 	if err != nil {
 
 	}
-	defer rows.Close()
 	var labSubmits []*LabSubmit
 	for rows.Next() {
 		var labSubmit LabSubmit
@@ -132,8 +134,27 @@ func GetSubmitByStatus(status, size int) ([]*LabSubmit, error) {
 
 func UpdateSubmitStatusResult(submitId uint64, fromStatus, toStatus int, submitResult string) (int64, error) {
 	stmt, err := DB.Prepare("UPDATE lab_submit SET status=?, submit_result=?, update_time=? WHERE status=? AND id=?")
+	defer stmt.Close()
 	updateTime := time.Now().UnixNano() / 1e6
 	ret, err := stmt.Exec(&toStatus, &submitResult, &updateTime, &fromStatus, &submitId)
 	rowsAffected, err := ret.RowsAffected()
 	return rowsAffected, err
+}
+
+func (labSubmit *LabSubmit) Insert() (int64, error) {
+	stmt, err := DB.Prepare("INSERT INTO lab_submit (lab_id, submit_data, submit_result, creator_id, creator, create_time) VALUES (?,?,?,?,?,?)")
+	defer stmt.Close()
+	insertRet, err := stmt.Exec(
+		labSubmit.LabID,
+		labSubmit.SubmitData,
+		labSubmit.SubmitResult,
+		labSubmit.CreatorId,
+		labSubmit.Creator,
+		labSubmit.CreateTime,
+	)
+	if err != nil {
+		log.Printf("[ERROR] insert lab submit error[%v]", err)
+		return 0, err
+	}
+	return insertRet.LastInsertId()
 }

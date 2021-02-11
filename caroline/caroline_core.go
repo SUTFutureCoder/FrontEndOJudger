@@ -3,7 +3,7 @@ package caroline
 import (
 	"FrontEndOJudger/models"
 	"context"
-	"fmt"
+	"errors"
 	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
 	"log"
@@ -31,20 +31,26 @@ func ExecCaroline(testChamber string, testcases []models.LabTestcase, id uint64)
 	var testResults []*TestResult
 
 	for testcaseId, testcase := range testcases {
-
-		testResult := TestResult{
-			Id:            id,
-			TestCaseId:    testcaseId,
-			TestCaseInput: testcase.Input,
+		testResult := &TestResult {
+			Id: id,
+			TestCaseId: testcaseId,
 		}
-		testResults = append(testResults, &testResult)
+		ExecTestCase(testChamber, testcase, testResult, &ctx)
+		testResults = append(testResults, testResult)
+	}
 
-		var output interface{}
+	return testResults
+}
 
-		testCaseCtx := ctx
+func ExecTestCase(testChamber string, testcase models.LabTestcase, testResult *TestResult, ctx *context.Context) {
+	testResult.TestCaseInput = testcase.Input
+	var output interface{}
+
+	exec := func () error {
+		testCaseCtx := *ctx
 		if testcase.TimeLimit != 0 {
 			var testCaseCancel context.CancelFunc
-			testCaseCtx, testCaseCancel = context.WithTimeout(ctx, time.Duration(testcase.TimeLimit)*time.Millisecond)
+			testCaseCtx, testCaseCancel = context.WithTimeout(*ctx, time.Duration(testcase.TimeLimit)*time.Millisecond)
 			defer testCaseCancel()
 		}
 
@@ -69,48 +75,52 @@ func ExecCaroline(testChamber string, testcases []models.LabTestcase, id uint64)
 				if errException != nil {
 					testResult.Status = models.LABSUBMITSTATUS_SYSTEM_ERROR
 					testResult.Err = errException.Error()
-					continue
+					return errors.New(testResult.Err)
 				}
 				testResult.Err = string(byteException)
 			}
 			log.Printf("#### ERR err[%v] id[%d] testcase[%v] testResult[%v]", err, testcase.ID, testcase.TimeLimit, testResult)
-			continue
+			return err
 		}
-
-		if o, ok := output.(string); ok {
-			testResult.SubmitOutput = o
-		}
-
-		if o, ok := output.(float64); ok {
-			testResult.SubmitOutput = strconv.FormatFloat(o,'f',-1,64)
-		}
-
-		if o, ok := output.(int64); ok {
-			testResult.SubmitOutput = strconv.FormatInt(o, 10)
-		}
-
-		if o, ok := output.(bool); ok {
-			testResult.SubmitOutput = strconv.FormatBool(o)
-		}
-
-		if o, ok := output.(uint64); ok {
-			testResult.SubmitOutput = strconv.FormatUint(o, 10)
-		}
-
-
-		testResult.TestcaseOutput = testcase.Output
-
-		if testResult.SubmitOutput == testcase.Output {
-			testResult.Status = models.LABSUBMITSTATUS_ACCEPTED
-			log.Printf("#### ACC OUTPUT[%v] id[%d] TESTCASEOUTPUT[%v]", testResult.SubmitOutput, testcase.ID, testcase.Output)
-		} else {
-			testResult.Status = models.LABSUBMITSTATUS_WRONG_ANSWER
-			log.Printf("#### WA OUTPUT[%v] id[%v] TESTCASEOUTPUT[%v]", testResult.SubmitOutput, testcase.ID, testcase.Output)
-		}
-
+		return nil
 	}
 
-	return testResults
+	err := exec()
+	if err != nil {
+		return
+	}
+
+	if o, ok := output.(string); ok {
+		testResult.SubmitOutput = o
+	}
+
+	if o, ok := output.(float64); ok {
+		testResult.SubmitOutput = strconv.FormatFloat(o,'f',-1,64)
+	}
+
+	if o, ok := output.(int64); ok {
+		testResult.SubmitOutput = strconv.FormatInt(o, 10)
+	}
+
+	if o, ok := output.(bool); ok {
+		testResult.SubmitOutput = strconv.FormatBool(o)
+	}
+
+	if o, ok := output.(uint64); ok {
+		testResult.SubmitOutput = strconv.FormatUint(o, 10)
+	}
+
+
+	testResult.TestcaseOutput = testcase.Output
+
+	if testResult.SubmitOutput == testcase.Output {
+		testResult.Status = models.LABSUBMITSTATUS_ACCEPTED
+		log.Printf("#### ACC OUTPUT[%v] id[%d] TESTCASEOUTPUT[%v]", testResult.SubmitOutput, testcase.ID, testcase.Output)
+	} else {
+		testResult.Status = models.LABSUBMITSTATUS_WRONG_ANSWER
+		log.Printf("#### WA OUTPUT[%v] id[%v] TESTCASEOUTPUT[%v]", testResult.SubmitOutput, testcase.ID, testcase.Output)
+	}
+	return
 }
 
 func RunWithTimeOut(ctx *context.Context, timeout time.Duration, tasks chromedp.Tasks) chromedp.ActionFunc {
@@ -130,7 +140,6 @@ func runTests(url string, labTestcase *models.LabTestcase, output *interface{}) 
 		// 在sleep之前执行一下，需要注意两次执行代码一样，但结果不同，为了保持核心代码和数据表整洁
 		task = append(task, chromedp.EvaluateAsDevTools(strings.ReplaceAll(labTestcase.TestcaseCode, "\n", ""), &temp))
 		task = append(task, chromedp.Sleep(time.Duration(labTestcase.WaitBefore)*time.Millisecond))
-		fmt.Println(labTestcase.WaitBefore)
 	}
 	task = append(task, chromedp.EvaluateAsDevTools(strings.ReplaceAll(labTestcase.TestcaseCode, "\n", ""), &output))
 	return task

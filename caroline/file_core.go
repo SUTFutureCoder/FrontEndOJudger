@@ -13,7 +13,7 @@ import (
 写入本地磁盘 ./test_chamber/{submitid}
 */
 func WriteSubmitToFile(labSubmit *models.LabSubmit) (string, string, error) {
-	testChamberDirName := fmt.Sprintf("%s/%s/%d/", setting.JudgerSetting.TestChamberBaseDir, setting.JudgerSetting.TestChamberDir, labSubmit.ID)
+	testChamberDirName := fmt.Sprintf("%s/%d/", setting.JudgerSetting.TestChamberBaseDir, labSubmit.ID)
 	testChamberFileName := fmt.Sprintf("%sindex.html", testChamberDirName)
 	testChamberUrlName := fmt.Sprintf("%d", labSubmit.ID)
 	// 检查是否存在

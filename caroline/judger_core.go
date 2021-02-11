@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"time"
 )
 
 func Judge() {
@@ -33,29 +32,40 @@ func Judge() {
 
 func JudgeQueue(ch chan *models.LabSubmit) {
 	v := <-ch
-	fmt.Println(time.Now().UnixNano() / 1e6)
-	_ = JudgeSubmit(v.ID)
-	fmt.Println(time.Now().UnixNano() / 1e6)
+	log.Printf("Start judge submitId[%d]", v.ID)
+	submitRet, err := JudgeSubmit(v.ID)
+	if submitRet != nil {
+		log.Printf("End judge submitId[%d] with status[%d] err[%#v]", submitRet.ID, submitRet.Status, err)
+		return
+	}
+	log.Printf("[ERROR] End judge submitId[%d] with empty result err[%#v]", v.ID, err)
 }
 
-func JudgeSubmit(submitId uint64) error {
+func JudgeSubmit(submitId uint64) (*models.LabSubmit, error) {
 
 	// 获取lab_id
 	labSubmit, err := models.GetSubmitById(submitId)
 	if err != nil {
 		log.Printf("")
-		return err
+		return labSubmit, err
 	}
 
-	if labSubmit == nil || labSubmit.LabID == 0 {
-		return nil
+	if labSubmit == nil {
+		return nil, errors.New("labSubmit is nil")
+	}
+
+	// 如果非法实验室、脏数据，直接判定失败
+	if labSubmit.LabID == 0 {
+		log.Printf("find the lab id of submit is 0, maybe dirty data, submitId[%d]", submitId)
+		return labSubmit, updateSubmitStatus(submitId, models.LABSUBMITSTATUS_PENDING, models.LABSUBMITSTATUS_SYSTEM_ERROR, labSubmit)
 	}
 
 	// 获取case信息
 	testcaseIds, err := models.GetLabTestcaseMapByLabId(labSubmit.LabID)
 	if len(testcaseIds) == 0 {
 		// 如果没有testcase直接判定AC
-		return updateSubmitStatus(submitId, models.LABSUBMITSTATUS_PENDING, models.LABSUBMITSTATUS_NO_TESTCASE, labSubmit)
+		log.Printf("find the length of testcase Ids is empty, labId[%d], submitId[%d]", labSubmit.LabID, submitId)
+		return labSubmit, updateSubmitStatus(submitId, models.LABSUBMITSTATUS_PENDING, models.LABSUBMITSTATUS_NO_TESTCASE, labSubmit)
 	}
 
 	// 获取testcase详情
@@ -65,13 +75,13 @@ func JudgeSubmit(submitId uint64) error {
 	rows, err := models.UpdateSubmitStatusResult(submitId, models.LABSUBMITSTATUS_PENDING, models.LABSUBMITSTATUS_JUDING, "")
 	if err != nil {
 		log.Printf("change submit status error submitId:%d fromStatus:%d toStatus:%d rows:%d err:%v", submitId, models.LABSUBMITSTATUS_PENDING, models.LABSUBMITSTATUS_JUDING, rows, err)
-		return errors.New(fmt.Sprintf("change submit status error submitId:%d fromStatus:%d toStatus:%d rows:%d err:%v", submitId, models.LABSUBMITSTATUS_PENDING, models.LABSUBMITSTATUS_JUDING, rows, err))
+		return labSubmit, errors.New(fmt.Sprintf("change submit status error submitId:%d fromStatus:%d toStatus:%d rows:%d err:%v", submitId, models.LABSUBMITSTATUS_PENDING, models.LABSUBMITSTATUS_JUDING, rows, err))
 	}
 
 	// 执行测试用例
 	_, testChamberUrlName, err := WriteSubmitToFile(labSubmit)
 	if err != nil {
-		return err
+		return labSubmit, err
 	}
 
 	// 记录执行时间
@@ -92,7 +102,7 @@ func JudgeSubmit(submitId uint64) error {
 	labSubmit.SubmitResult = string(jsonByte)
 
 	// 更新结果
-	return updateSubmitStatus(submitId, models.LABSUBMITSTATUS_JUDING, labSubmit.Status, labSubmit)
+	return labSubmit, updateSubmitStatus(submitId, models.LABSUBMITSTATUS_JUDING, labSubmit.Status, labSubmit)
 }
 
 func updateSubmitStatus(submitId uint64, fromStatus, toStatus int, labSubmit *models.LabSubmit) error {

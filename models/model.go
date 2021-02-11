@@ -13,6 +13,8 @@ type Model struct {
 	ID uint64 `json:"id"`
 	// Status 实验室状态
 	Status int `json:"status"`
+	// CreatorId 创建人Id
+	CreatorId uint64 `json:"creator_id"`
 	// Creator 创建人
 	Creator string `json:"creator"`
 	// CreateTime 创建时间
@@ -20,6 +22,13 @@ type Model struct {
 	// UpdateTime 修改时间
 	UpdateTime int `json:"update_time"`
 }
+
+const (
+	STATUS_CONSTRUCTING = -2
+	STATUS_ALL = -1
+	STATUS_DISABLE = 0
+	STATUS_ENABLE = 1
+)
 
 var DB *sql.DB
 
