@@ -22,6 +22,15 @@ type Judger struct {
 
 var JudgerSetting = &Judger{}
 
+type Frontend struct {
+	EnableWebsocket bool
+	WebsocketScheme string
+	WebsocketHost string
+	WebsocketPath string
+	WebsocketToken string
+}
+var FrontEndSetting = &Frontend{}
+
 type Database struct {
 	Type         string
 	User         string
@@ -46,6 +55,7 @@ func Setup() {
 
 	mapTo("database", DatabaseSetting)
 	mapTo("judger", JudgerSetting)
+	mapTo("frontend", FrontEndSetting)
 }
 
 func mapTo(s string, v interface{}) {

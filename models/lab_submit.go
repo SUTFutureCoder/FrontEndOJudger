@@ -60,11 +60,11 @@ const (
 )
 
 func GetSubmitById(submitId uint64) (*LabSubmit, error) {
-	stmt, err := DB.Prepare("SELECT id, lab_id, submit_data, submit_result, submit_time_usage, status, creator, create_time, update_time FROM lab_submit WHERE id = ? AND status = 1")
+	stmt, err := DB.Prepare("SELECT id, lab_id, submit_data, submit_result, submit_time_usage, status, creator, creator_id, create_time, update_time FROM lab_submit WHERE id = ? AND status = 1")
 	defer stmt.Close()
 	row := stmt.QueryRow(&submitId)
 	labSubmit := new(LabSubmit)
-	row.Scan(&labSubmit.ID, &labSubmit.LabID, &labSubmit.SubmitData, &labSubmit.SubmitResult, &labSubmit.SubmitTimeUsage, &labSubmit.Status, &labSubmit.Creator, &labSubmit.CreateTime, &labSubmit.UpdateTime)
+	row.Scan(&labSubmit.ID, &labSubmit.LabID, &labSubmit.SubmitData, &labSubmit.SubmitResult, &labSubmit.SubmitTimeUsage, &labSubmit.Status, &labSubmit.Creator, &labSubmit.CreatorId, &labSubmit.CreateTime, &labSubmit.UpdateTime)
 	return labSubmit, err
 }
 

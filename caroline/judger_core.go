@@ -3,6 +3,7 @@ package caroline
 import (
 	"FrontEndOJudger/models"
 	"FrontEndOJudger/pkg/setting"
+	"FrontEndOJudger/pkg/ws"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -34,11 +35,29 @@ func JudgeQueue(ch chan *models.LabSubmit) {
 	v := <-ch
 	log.Printf("Start judge submitId[%d]", v.ID)
 	submitRet, err := JudgeSubmit(v.ID)
-	if submitRet != nil {
+	if submitRet != nil && err == nil {
 		log.Printf("End judge submitId[%d] with status[%d] err[%#v]", submitRet.ID, submitRet.Status, err)
+		go ResultCallBack(submitRet.ID, submitRet.CreatorId, submitRet.Status)
 		return
 	}
 	log.Printf("[ERROR] End judge submitId[%d] with empty result err[%#v]", v.ID, err)
+}
+
+
+func ResultCallBack(id, creatorId uint64, status int) {
+	if !setting.FrontEndSetting.EnableWebsocket {
+		return
+	}
+	var submitRet models.LabSubmit
+	submitRet.ID = id
+	submitRet.CreatorId = creatorId
+	submitRet.Status = status
+	retByte, _ := json.Marshal(submitRet)
+	wsReq := ws.WsJsonReq {
+		Cmd: ws.JudgerResultCallBack,
+		Data: string(retByte),
+	}
+	ws.SendChan <- &wsReq
 }
 
 func JudgeSubmit(submitId uint64) (*models.LabSubmit, error) {

@@ -4,6 +4,7 @@ import (
 	"FrontEndOJudger/caroline"
 	"FrontEndOJudger/models"
 	"FrontEndOJudger/pkg/setting"
+	"FrontEndOJudger/pkg/ws"
 	"fmt"
 	"log"
 	"net/http"
@@ -16,6 +17,7 @@ func init() {
 	setting.Setup()
 	setting.Check()
 	models.Setup()
+	go ws.Setup()
 	runtime.GOMAXPROCS(runtime.NumCPU())
 }
 
@@ -31,6 +33,7 @@ func main() {
 	// start directly
 	go func() {
 		http.HandleFunc("/httpjudger", caroline.HttpJudger)
+		http.HandleFunc("/screenshot", caroline.ScreenShot)
 		go http.ListenAndServe(fmt.Sprintf(":%s", setting.JudgerSetting.HttpJudgerPort), nil)
 	}()
 
