@@ -2,25 +2,19 @@ package ws
 
 import (
 	"FrontEndOJudger/pkg/setting"
-	"fmt"
-	"github.com/gorilla/websocket"
 	"log"
-	"net/http"
-	"net/url"
 )
+
+var connManager wsConnManager
 
 func Setup() {
 	if !setting.FrontEndSetting.EnableWebsocket {
 		return
 	}
-	u := url.URL{Scheme: setting.FrontEndSetting.WebsocketScheme, Host: setting.FrontEndSetting.WebsocketHost, Path: fmt.Sprintf("/%s", setting.FrontEndSetting.WebsocketPath)}
-	var dialer *websocket.Dialer
-	c, _, err := dialer.Dial(u.String(), http.Header{"session_token": []string{setting.FrontEndSetting.WebsocketToken}})
-	if err != nil {
-		log.Fatalf("Dail Front Websocket Error : %v", err)
-	}
 
-	handleSend(c)
+	// ensure alive
+	go connManager.connAndTickTacker()
+	go connManager.handleSend()
 }
 
 
@@ -32,19 +26,25 @@ type WsJsonReq struct {
 var SendChan chan *WsJsonReq
 
 const (
-	HelloWorld = "HelloWorld"
-	SayHello   = "SayHello"
+	Ticker = "Ticker"
 	JudgerResultCallBack = "JudgerResultCallBack"
 )
 
-func handleSend(c *websocket.Conn) {
+func (c *wsConnManager)handleSend() {
 	SendChan = make(chan *WsJsonReq, 128)
 	for {
 		select {
 		case sendData := <- SendChan:
-			err := c.WriteJSON(sendData)
+			if c.c == nil {
+				log.Printf("Websocket connection not ready. Reset data")
+				SendChan <- sendData
+				continue
+			}
+			err := c.c.WriteJSON(sendData)
 			if err != nil {
 				log.Printf("SEND Msg to Websocket Server Error err:%v", err)
+				// wait reconnect
+				SendChan <- sendData
 			}
 		}
 	}

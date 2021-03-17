@@ -37,21 +37,19 @@ func JudgeQueue(ch chan *models.LabSubmit) {
 	submitRet, err := JudgeSubmit(v.ID)
 	if submitRet != nil && err == nil {
 		log.Printf("End judge submitId[%d] with status[%d] err[%#v]", submitRet.ID, submitRet.Status, err)
-		go ResultCallBack(submitRet.ID, submitRet.CreatorId, submitRet.Status)
+		go ResultCallBack(submitRet)
 		return
 	}
 	log.Printf("[ERROR] End judge submitId[%d] with empty result err[%#v]", v.ID, err)
 }
 
 
-func ResultCallBack(id, creatorId uint64, status int) {
+func ResultCallBack(submitRet *models.LabSubmit) {
 	if !setting.FrontEndSetting.EnableWebsocket {
 		return
 	}
-	var submitRet models.LabSubmit
-	submitRet.ID = id
-	submitRet.CreatorId = creatorId
-	submitRet.Status = status
+	submitRet.SubmitResult = ""
+	submitRet.SubmitData = ""
 	retByte, _ := json.Marshal(submitRet)
 	wsReq := ws.WsJsonReq {
 		Cmd: ws.JudgerResultCallBack,
