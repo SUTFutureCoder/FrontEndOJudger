@@ -11,6 +11,7 @@ const FRONTENDOJUDGER = "FrontEndOJudger"
 
 type Judger struct {
 	JudgerSum          int
+	BufferSum		int
 	SleepTime          int
 
 	TestChamberSwitch bool

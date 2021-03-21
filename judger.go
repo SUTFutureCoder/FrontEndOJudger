@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 	"runtime"
 	"time"
 )
@@ -22,6 +23,12 @@ func init() {
 }
 
 func main() {
+
+	// debug mode
+	go func() {
+		http.ListenAndServe("0.0.0.0:8899", nil)
+	}()
+
 	// start static file when run test chamber local
 	go func() {
 		if setting.JudgerSetting.TestChamberSwitch {
@@ -47,10 +54,7 @@ func main() {
 
 	log.Printf("[SUCCESS] Project Caroline Judger Started 🎂")
 
-	for {
-		// main judge process
-		caroline.Judge()
-		time.Sleep(time.Duration(setting.JudgerSetting.SleepTime) * time.Millisecond)
-	}
-
+	// main judge process
+	go caroline.Judge()
+	select{}
 }

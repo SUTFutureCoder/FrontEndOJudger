@@ -8,7 +8,8 @@ import (
 
 func FixExpiredJudgingSubmits() {
 	// STEP1 get expired submits
-	labSubmits, err := models.GetExpiredJudgingSubmits(setting.JudgerSetting.JudgerSum)
+	labSubmit := &models.LabSubmit{}
+	labSubmits, err := labSubmit.GetExpiredJudgingSubmits(setting.JudgerSetting.JudgerSum)
 
 	if err != nil {
 		log.Printf("[ERROR] failed get expired juding submits err:[%v]", err)
@@ -17,7 +18,7 @@ func FixExpiredJudgingSubmits() {
 
 	// STEP2 change status to pending
 	for _, labSubmit := range labSubmits {
-		models.UpdateSubmitStatusResult(labSubmit.ID, labSubmit.Status, models.LABSUBMITSTATUS_PENDING, labSubmit.SubmitResult)
+		labSubmit.UpdateStatusResult(labSubmit.Status, models.LABSUBMITSTATUS_PENDING, labSubmit.SubmitResult)
 	}
 
 	// FIN wait for judge main process

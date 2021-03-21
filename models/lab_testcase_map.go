@@ -13,11 +13,11 @@ type LabTestcaseMap struct {
 	TestcaseID uint64 `json:"testcase_id"`
 }
 
-func GetLabTestcaseMapByLabId(labId uint64) ([]interface{}, error) {
+func (l *LabTestcaseMap) GetByLabId() ([]interface{}, error) {
 	var testcaseIds []interface{}
 	stmt, err := DB.Prepare("SELECT testcase_id FROM lab_testcase_map WHERE lab_id = ? AND status = 1")
 	rows, err := stmt.Query(
-		&labId,
+		&l.LabID,
 	)
 	defer stmt.Close()
 	for rows.Next() {

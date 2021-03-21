@@ -23,7 +23,7 @@ type LabTestcase struct {
 	WaitBefore int `json:"wait_before"`
 }
 
-func GetTestcaseByIds(testcaseIds []interface{}) ([]LabTestcase, error) {
+func (labTestcase *LabTestcase) GetByIds(testcaseIds []interface{}) ([]LabTestcase, error) {
 	rows, err := DB.Query("SELECT id, testcase_code, testcase_desc, input, output, time_limit, mem_limit, wait_before, status, creator, create_time, update_time FROM lab_testcase WHERE id IN (?"+strings.Repeat(",?", len(testcaseIds)-1)+") AND status = 1", testcaseIds...)
 	defer rows.Close()
 	var testcases []LabTestcase

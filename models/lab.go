@@ -22,11 +22,10 @@ const (
 	LABTYPE_IMITATE
 )
 
-func GetLabFullInfo(id uint64) (Lab, error) {
-	var lab Lab
+func (lab *Lab) GetFullInfo(id uint64) error {
 	stmt, err := DB.Prepare("SELECT id, lab_name, lab_desc, lab_type, lab_sample, lab_template, status, creator_id, creator, create_time, update_time FROM lab WHERE id=?")
 	if err != nil {
-		return lab, err
+		return err
 	}
 	defer stmt.Close()
 	row := stmt.QueryRow(&id)
@@ -35,7 +34,7 @@ func GetLabFullInfo(id uint64) (Lab, error) {
 	)
 	if err != nil {
 		log.Printf("get lab info error [%v]\n", err)
-		return lab, err
+		return err
 	}
-	return lab, err
+	return err
 }

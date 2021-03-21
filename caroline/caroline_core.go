@@ -6,7 +6,6 @@ import (
 	"errors"
 	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -79,7 +78,7 @@ func ExecTestCase(testChamber string, testcase models.LabTestcase, testResult *T
 				}
 				testResult.Err = string(byteException)
 			}
-			log.Printf("#### ERR err[%v] id[%d] testcase[%v] testResult[%v]", err, testcase.ID, testcase.TimeLimit, testResult)
+			//log.Printf("#### ERR err[%v] id[%d] testcase[%v] testResult[%v]", err, testcase.ID, testcase.TimeLimit, testResult)
 			return err
 		}
 		return nil
@@ -115,10 +114,10 @@ func ExecTestCase(testChamber string, testcase models.LabTestcase, testResult *T
 
 	if testResult.SubmitOutput == testcase.Output {
 		testResult.Status = models.LABSUBMITSTATUS_ACCEPTED
-		log.Printf("#### ACC OUTPUT[%v] id[%d] TESTCASEOUTPUT[%v]", testResult.SubmitOutput, testcase.ID, testcase.Output)
+		//log.Printf("#### ACC OUTPUT[%v] id[%d] TESTCASEOUTPUT[%v]", testResult.SubmitOutput, testcase.ID, testcase.Output)
 	} else {
 		testResult.Status = models.LABSUBMITSTATUS_WRONG_ANSWER
-		log.Printf("#### WA OUTPUT[%v] id[%v] TESTCASEOUTPUT[%v]", testResult.SubmitOutput, testcase.ID, testcase.Output)
+		//log.Printf("#### WA OUTPUT[%v] id[%v] TESTCASEOUTPUT[%v]", testResult.SubmitOutput, testcase.ID, testcase.Output)
 	}
 	return
 }

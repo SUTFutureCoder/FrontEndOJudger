@@ -30,7 +30,8 @@ func HttpJudger(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// get lab data
-	lab, err := models.GetLabFullInfo(judgerReq.LabId)
+	lab := &models.Lab{}
+	err := lab.GetFullInfo(judgerReq.LabId)
 	if err != nil {
 		net.Writer(w, net.ERROR, err.Error(), nil)
 		return
@@ -60,7 +61,7 @@ func HttpJudger(w http.ResponseWriter, req *http.Request) {
 	ExecTestCase(testChamber, judgerReq.LabTestcase, &testResult, &ctx)
 
 	// write back result
-	_, err = models.UpdateSubmitStatusResult(labSubmit.ID, labSubmit.Status, labSubmit.Status, testResult.SubmitOutput)
+	_, err = labSubmit.UpdateStatusResult(labSubmit.Status, labSubmit.Status, testResult.SubmitOutput)
 	if err != nil {
 		net.Writer(w, net.ERROR, err.Error(), nil)
 		return
