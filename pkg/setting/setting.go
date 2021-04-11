@@ -1,10 +1,10 @@
 package setting
 
 import (
-	"fmt"
 	"github.com/go-ini/ini"
 	"log"
 	"os"
+	"path/filepath"
 )
 
 const FRONTENDOJUDGER = "FrontEndOJudger"
@@ -45,6 +45,14 @@ type Database struct {
 
 var DatabaseSetting = &Database{}
 
+type File struct {
+	FileToolType string
+	FileBaseDir string
+	CloudFileBaseUrl string
+}
+
+var FileSetting = &File{}
+
 var cfg *ini.File
 
 func Setup() {
@@ -57,6 +65,7 @@ func Setup() {
 	mapTo("database", DatabaseSetting)
 	mapTo("judger", JudgerSetting)
 	mapTo("frontend", FrontEndSetting)
+	mapTo("file", FileSetting)
 }
 
 func mapTo(s string, v interface{}) {
@@ -91,7 +100,7 @@ func checkAndFixDirExists(targetDir string, suffix string) string {
 	if err != nil {
 		log.Fatalf("Can not create target dir and your home dir, please check your config in conf/*.ini was set correctly.")
 	}
-	newDir := fmt.Sprintf("%s/%s", homeDir, suffix)
+	newDir := filepath.Join(homeDir, suffix)
 	// try create dir if not exist
 	err = os.MkdirAll(newDir, 0777)
 	if err == nil {
@@ -102,12 +111,8 @@ func checkAndFixDirExists(targetDir string, suffix string) string {
 }
 
 
-//func checkLogger() {
-//	// check log dir
-//	JudgerSetting.JudgerLogBaseDir = fmt.Sprintf("%s/%s", checkAndFixDirExists(JudgerSetting.JudgerLogBaseDir), JudgerSetting.JudgerLogDir)
-//}
-
 func checkJudger() {
 	// check judger TestChamberBaseDir
 	JudgerSetting.TestChamberBaseDir = checkAndFixDirExists(JudgerSetting.TestChamberBaseDir, "test_submit")
+	FileSetting.FileBaseDir = checkAndFixDirExists(FileSetting.FileBaseDir, "static/file")
 }

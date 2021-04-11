@@ -13,11 +13,18 @@ type LabSubmit struct {
 	LabID uint64 `json:"lab_id"`
 	// SubmitData 提交内容
 	SubmitData string `json:"submit_data"`
+	// SubmitType 提交类型
+	SubmitType int8 `json:"submit_type"`
 	// SubmitResult 提交结果
 	SubmitResult string `json:"submit_result"`
 	// SubmitTimeUsage 消耗时间
 	SubmitTimeUsage int64 `json:"submit_time_usage"`
 }
+
+const (
+	SUBMIT_TYPE_SOURCE = 0
+	SUBMIT_TYPE_PACKAGE = 1
+)
 
 /**
 使用标准ACM OnlineJudget状态
@@ -60,10 +67,13 @@ const (
 )
 
 func (labSubmit *LabSubmit) GetById(submitId uint64) error {
-	stmt, err := DB.Prepare("SELECT id, lab_id, submit_data, submit_result, submit_time_usage, status, creator, creator_id, create_time, update_time FROM lab_submit WHERE id = ?")
+	stmt, err := DB.Prepare("SELECT id, lab_id, submit_data, submit_type, submit_result, submit_time_usage, status, creator, creator_id, create_time, update_time FROM lab_submit WHERE id = ?")
+	if err != nil {
+		return err
+	}
 	defer stmt.Close()
 	row := stmt.QueryRow(&submitId)
-	row.Scan(&labSubmit.ID, &labSubmit.LabID, &labSubmit.SubmitData, &labSubmit.SubmitResult, &labSubmit.SubmitTimeUsage, &labSubmit.Status, &labSubmit.Creator, &labSubmit.CreatorId, &labSubmit.CreateTime, &labSubmit.UpdateTime)
+	row.Scan(&labSubmit.ID, &labSubmit.LabID, &labSubmit.SubmitData, &labSubmit.SubmitType , &labSubmit.SubmitResult, &labSubmit.SubmitTimeUsage, &labSubmit.Status, &labSubmit.Creator, &labSubmit.CreatorId, &labSubmit.CreateTime, &labSubmit.UpdateTime)
 	return err
 }
 
@@ -81,7 +91,7 @@ func (labSubmit *LabSubmit) GetExpiredJudgingSubmits(size int) ([]*LabSubmit, er
 	args = append(args, expiredJudgingStatus...)
 	args = append(args, safeTime, size)
 
-	stmt, err := DB.Query("SELECT id, lab_id, submit_data, submit_result, submit_time_usage, status, creator, create_time, update_time FROM lab_submit WHERE status IN (?"+strings.Repeat(",?", len(expiredJudgingStatus)-1)+") AND create_time <= ? LIMIT ?", args...)
+	stmt, err := DB.Query("SELECT id, lab_id, submit_data, submit_type, submit_result, submit_time_usage, status, creator, create_time, update_time FROM lab_submit WHERE status IN (?"+strings.Repeat(",?", len(expiredJudgingStatus)-1)+") AND create_time <= ? LIMIT ?", args...)
 	defer stmt.Close()
 	var labSubmits []*LabSubmit
 	for stmt.Next() {
@@ -90,6 +100,7 @@ func (labSubmit *LabSubmit) GetExpiredJudgingSubmits(size int) ([]*LabSubmit, er
 			&labSubmit.ID,
 			&labSubmit.LabID,
 			&labSubmit.SubmitData,
+			&labSubmit.SubmitType,
 			&labSubmit.SubmitResult,
 			&labSubmit.SubmitTimeUsage,
 			&labSubmit.Status,
@@ -103,7 +114,7 @@ func (labSubmit *LabSubmit) GetExpiredJudgingSubmits(size int) ([]*LabSubmit, er
 }
 
 func (labSubmit *LabSubmit) GetByStatus(status, size int) ([]*LabSubmit, error) {
-	stmt, err := DB.Prepare("SELECT id, lab_id, submit_data, submit_result, submit_time_usage, status, creator, create_time, update_time FROM lab_submit WHERE status = ? LIMIT ?")
+	stmt, err := DB.Prepare("SELECT id, lab_id, submit_data, submit_type, submit_result, submit_time_usage, status, creator, create_time, update_time FROM lab_submit WHERE status = ? LIMIT ?")
 	defer stmt.Close()
 	rows, err := stmt.Query(
 		&status,
@@ -119,6 +130,7 @@ func (labSubmit *LabSubmit) GetByStatus(status, size int) ([]*LabSubmit, error) 
 			&labSubmit.ID,
 			&labSubmit.LabID,
 			&labSubmit.SubmitData,
+			&labSubmit.SubmitType,
 			&labSubmit.SubmitResult,
 			&labSubmit.SubmitTimeUsage,
 			&labSubmit.Status,

@@ -2,6 +2,7 @@ package caroline
 
 import (
 	"FrontEndOJudger/models"
+	"FrontEndOJudger/pkg/file"
 	"FrontEndOJudger/pkg/setting"
 	"FrontEndOJudger/pkg/ws"
 	"encoding/json"
@@ -60,6 +61,7 @@ func JudgeQueue(ch <-chan *models.LabSubmit, i int) {
 			continue
 		}
 		log.Printf("[ERROR] End judge submitId[%d] with empty result err[%#v]", v.ID, err)
+
 	}
 }
 
@@ -110,17 +112,31 @@ func JudgeSubmit(submitId uint64) (*models.LabSubmit, error) {
 	testcases, err := testcase.GetByIds(testcaseIds)
 
 
-	// 执行测试用例
-	_, testChamberUrlName, err := WriteSubmitToFile(labSubmit)
+	// write to disk
+	fileTool, err := file.GetFileTool(setting.FileSetting.FileToolType)
 	if err != nil {
-		return labSubmit, err
+		log.Printf("write to disk error: %#v", err)
+		return labSubmit, updateSubmitStatus(submitId, models.LABSUBMITSTATUS_JUDING, models.LABSUBMITSTATUS_SYSTEM_ERROR, labSubmit)
 	}
-
+	dest, err := file.GetDest(labSubmit.ID)
+	if err != nil {
+		log.Printf("get dest error: %#v", err)
+		return labSubmit, updateSubmitStatus(submitId, models.LABSUBMITSTATUS_JUDING, models.LABSUBMITSTATUS_SYSTEM_ERROR, labSubmit)
+	}
+	switch labSubmit.SubmitType {
+	case models.SUBMIT_TYPE_SOURCE:
+		err = file.PutLocal([]byte(labSubmit.SubmitData), dest)
+	case models.SUBMIT_TYPE_PACKAGE:
+		err = fileTool.Unzip(labSubmit.SubmitData, dest)
+	}
+	if err != nil {
+		log.Printf("putlocal or unzip error:%#v", err)
+		//return labSubmit, updateSubmitStatus(submitId, models.LABSUBMITSTATUS_JUDING, models.LABSUBMITSTATUS_SYSTEM_ERROR, labSubmit)
+	}
 	// 记录执行时间
 
 	// 实际执行
-	//testResults := ExecCaroline("file://"+testChamberFileName, testcases, submitId)
-	testResults := ExecCaroline(fmt.Sprintf("%s:%s/%s", setting.JudgerSetting.TestChamberAddr, setting.JudgerSetting.TestChamberPort, testChamberUrlName), testcases, submitId)
+	testResults := ExecCaroline(fmt.Sprintf("%s:%s/%d", setting.JudgerSetting.TestChamberAddr, setting.JudgerSetting.TestChamberPort, labSubmit.ID), testcases, submitId)
 
 	// 获取测试结果 更新结果
 	labSubmit.Status = models.LABSUBMITSTATUS_ACCEPTED

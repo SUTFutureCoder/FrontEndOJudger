@@ -10,5 +10,6 @@ require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/smartystreets/goconvey v1.6.4 // indirect
 	golang.org/x/sys v0.0.0-20200413165638-669c56c373c4 // indirect
+	golang.org/x/text v0.3.6 // indirect
 	gopkg.in/ini.v1 v1.57.0 // indirect
 )

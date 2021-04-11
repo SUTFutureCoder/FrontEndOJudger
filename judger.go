@@ -5,6 +5,7 @@ import (
 	"FrontEndOJudger/models"
 	"FrontEndOJudger/pkg/setting"
 	"FrontEndOJudger/pkg/ws"
+	"FrontEndOJudger/routers/api/v1"
 	"fmt"
 	"log"
 	"net/http"
@@ -39,8 +40,8 @@ func main() {
 
 	// start directly
 	go func() {
-		http.HandleFunc("/httpjudger", caroline.HttpJudger)
-		http.HandleFunc("/screenshot", caroline.ScreenShot)
+		http.HandleFunc("/httpjudger", v1.HttpJudger)
+		http.HandleFunc("/screenshot", v1.ScreenShot)
 		go http.ListenAndServe(fmt.Sprintf(":%s", setting.JudgerSetting.HttpJudgerPort), nil)
 	}()
 
