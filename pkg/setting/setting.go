@@ -19,6 +19,9 @@ type Judger struct {
 	TestChamberAddr string
 	TestChamberPort string
 	HttpJudgerPort string
+
+	DeepLearningPython string
+	DeepLearningJudger string
 }
 
 var JudgerSetting = &Judger{}

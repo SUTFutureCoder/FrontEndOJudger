@@ -118,25 +118,24 @@ func JudgeSubmit(submitId uint64) (*models.LabSubmit, error) {
 		log.Printf("write to disk error: %#v", err)
 		return labSubmit, updateSubmitStatus(submitId, models.LABSUBMITSTATUS_JUDING, models.LABSUBMITSTATUS_SYSTEM_ERROR, labSubmit)
 	}
-	dest, err := file.GetDest(labSubmit.ID)
+	dest, destFile, err := file.GetDest(labSubmit.ID)
 	if err != nil {
 		log.Printf("get dest error: %#v", err)
 		return labSubmit, updateSubmitStatus(submitId, models.LABSUBMITSTATUS_JUDING, models.LABSUBMITSTATUS_SYSTEM_ERROR, labSubmit)
 	}
 	switch labSubmit.SubmitType {
 	case models.SUBMIT_TYPE_SOURCE:
-		err = file.PutLocal([]byte(labSubmit.SubmitData), dest)
+		err = file.PutLocal([]byte(labSubmit.SubmitData), destFile)
 	case models.SUBMIT_TYPE_PACKAGE:
 		err = fileTool.Unzip(labSubmit.SubmitData, dest)
 	}
 	if err != nil {
 		log.Printf("putlocal or unzip error:%#v", err)
-		//return labSubmit, updateSubmitStatus(submitId, models.LABSUBMITSTATUS_JUDING, models.LABSUBMITSTATUS_SYSTEM_ERROR, labSubmit)
+		return labSubmit, updateSubmitStatus(submitId, models.LABSUBMITSTATUS_JUDING, models.LABSUBMITSTATUS_SYSTEM_ERROR, labSubmit)
 	}
 	// 记录执行时间
 
-	// 实际执行
-	testResults := ExecCaroline(fmt.Sprintf("%s:%s/%d", setting.JudgerSetting.TestChamberAddr, setting.JudgerSetting.TestChamberPort, labSubmit.ID), testcases, submitId)
+	testResults := ExecCaroline(fmt.Sprintf("%s:%s/%d", setting.JudgerSetting.TestChamberAddr, setting.JudgerSetting.TestChamberPort, labSubmit.ID), testcases, submitId, labSubmit.LabID)
 
 	// 获取测试结果 更新结果
 	labSubmit.Status = models.LABSUBMITSTATUS_ACCEPTED

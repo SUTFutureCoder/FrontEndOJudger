@@ -153,12 +153,13 @@ func (labSubmit *LabSubmit) UpdateStatusResult(fromStatus, toStatus int, submitR
 }
 
 func (labSubmit *LabSubmit) Insert() (int64, error) {
-	stmt, err := DB.Prepare("INSERT INTO lab_submit (lab_id, submit_data, submit_result, creator_id, creator, create_time) VALUES (?,?,?,?,?,?)")
+	stmt, err := DB.Prepare("INSERT INTO lab_submit (lab_id, submit_data, submit_result, status, creator_id, creator, create_time) VALUES (?,?,?,?,?,?,?)")
 	defer stmt.Close()
 	insertRet, err := stmt.Exec(
 		labSubmit.LabID,
 		labSubmit.SubmitData,
 		labSubmit.SubmitResult,
+		labSubmit.Status,
 		labSubmit.CreatorId,
 		labSubmit.Creator,
 		labSubmit.CreateTime,

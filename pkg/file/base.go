@@ -4,6 +4,8 @@ import (
 	"FrontEndOJudger/pkg/setting"
 	"archive/zip"
 	"bytes"
+	"crypto/md5"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"golang.org/x/text/encoding/simplifiedchinese"
@@ -13,6 +15,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 )
 
 type Ifile interface {
@@ -41,19 +44,32 @@ func GetFileTool(toolType string) (Ifile, error) {
 	return fileTools[toolType], nil
 }
 
-func GetDest(submitId uint64) (string, error){
+func GetPathByBytes(userId uint64, fileByte []byte) (string, string) {
+	h := md5.New()
+	h.Write(fileByte)
+	has := hex.EncodeToString(h.Sum(nil))
+	fileName := fmt.Sprintf("%x", has)
+
+	dst := strconv.FormatUint(userId, 10)
+	os.MkdirAll(filepath.Join(setting.FileSetting.FileBaseDir, dst), os.ModePerm)
+	dst += "/" + fileName
+
+	return filepath.Join(setting.FileSetting.FileBaseDir, dst), dst
+}
+
+func GetDest(submitId uint64) (string, string, error){
 	testChamberDirName := fmt.Sprintf("%s/%d/", setting.JudgerSetting.TestChamberBaseDir, submitId)
 	testChamberFileName := fmt.Sprintf("%sindex.html", testChamberDirName)
 	// 检查是否存在
 	_, err := os.Stat(testChamberFileName)
 	if err == nil || os.IsExist(err) {
-		return testChamberDirName, nil
+		return testChamberDirName, testChamberFileName, nil
 	}
 	err = os.MkdirAll(testChamberDirName, 0777)
 	if err != nil {
 		log.Printf("Can not mkdir [%s] error [%s]", testChamberDirName, err)
 	}
-	return testChamberDirName, err
+	return testChamberDirName, testChamberFileName, err
 }
 
 func PutLocal(data []byte, dst string) error {

@@ -1,93 +1,62 @@
 package v1
 
 import (
+	"FrontEndOJudger/caroline/judger"
+	"FrontEndOJudger/models"
+	"FrontEndOJudger/pkg/file"
+	"FrontEndOJudger/pkg/net"
+	"FrontEndOJudger/pkg/utils"
 	"context"
 	"encoding/json"
-	"github.com/chromedp/cdproto/emulation"
-	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
-	"io/ioutil"
-	"log"
-	"math"
 	"net/http"
 )
 
-type screenshotReq struct {
-	Url string `json:"url"`
-	Height int `json:"height"`
-	Width int `json:"width"`
-	Scale float64 `json:"scale"`
-
+type httpScreenShotJudgerReq struct {
+	LabId uint64 `json:"lab_id"`
+	LabTestcase models.LabTestcase `json:"lab_testcase"`
 }
 
 func ScreenShot(w http.ResponseWriter, req *http.Request) {
 
-	var screenReq screenshotReq
+	screenReq := &httpScreenShotJudgerReq{}
+	testResult := &judger.TestResult{}
 	decoder := json.NewDecoder(req.Body)
-	decoder.Decode(&screenReq)
+	decoder.Decode(screenReq)
+
+	testcaseInput := &models.LabTestcaseInputImitate{}
+	err := json.Unmarshal([]byte(screenReq.LabTestcase.Input), testcaseInput)
+	if err != nil {
+		net.Writer(w, net.ERROR, err.Error(), nil)
+		return
+	}
+
 	// Start Chrome
 	// Remove the 2nd param if you don't need debug information logged
 	ctx, cancel := chromedp.NewContext(context.Background())
 	defer cancel()
 
-	url := "https://www.bilibili.com/"
-	filename := "golangcode.png"
-
 	// Run Tasks
 	// List of actions to run in sequence (which also fills our image buffer)
-	var imageBuf []byte
-	if err := chromedp.Run(ctx, ScreenshotTasks(url, &imageBuf)); err != nil {
-		log.Fatal(err)
+	var imageBuf interface{}
+	if err := chromedp.Run(ctx, utils.ScreenshotTasks(testcaseInput.TestcaseUrl, testcaseInput.TestcaseUrlCookies, &imageBuf, testcaseInput.TestcaseWidth, testcaseInput.TestcaseHeight, screenReq.LabTestcase.WaitBefore)); err != nil {
+		net.Writer(w, net.ERROR, err.Error(), nil)
+		return
 	}
 
-	// Write our image to file
-	if err := ioutil.WriteFile(filename, imageBuf, 0644); err != nil {
-		log.Fatal(err)
+	// get path
+	var imageBufByte []byte
+	if o, ok := imageBuf.([]byte); ok {
+		imageBufByte = o
 	}
+	filepath, reqpath := file.GetPathByBytes(screenReq.LabTestcase.CreatorId, imageBufByte)
+	err = file.PutLocal(imageBufByte, filepath + ".png")
+	if err != nil {
+		net.Writer(w, net.ERROR, err.Error(), nil)
+		return
+	}
+
+	testResult.SubmitOutput = reqpath  + ".png"
+	net.Writer(w, net.SUCCESS, "", testResult)
 }
 
-
-func ScreenshotTasks(url string, imageBuf *[]byte) chromedp.Tasks {
-	return chromedp.Tasks{
-		chromedp.Navigate(url),
-		//chromedp.ActionFunc(func(ctx context.Context) (err error) {
-		//	*imageBuf, err = page.CaptureScreenshot().WithQuality(90).Do(ctx)
-		//	return err
-		//}),
-		chromedp.EmulateViewport(1400, 0, chromedp.EmulateScale(1)),
-
-		chromedp.ActionFunc(func(ctx context.Context) error {
-			// get layout metrics
-			_, _, contentSize, err := page.GetLayoutMetrics().Do(ctx)
-			if err != nil {
-				return err
-			}
-
-			width, height := int64(math.Ceil(contentSize.Width)), int64(math.Ceil(contentSize.Height))
-
-			err = emulation.SetDeviceMetricsOverride(width, height, 1, false).
-				WithScreenOrientation(&emulation.ScreenOrientation{
-					Type:  emulation.OrientationTypePortraitPrimary,
-					Angle: 0,
-				}).Do(ctx)
-			if err != nil {
-				return err
-			}
-
-			*imageBuf, err = page.CaptureScreenshot().
-				WithQuality(100).
-				WithClip(&page.Viewport{
-					X:      contentSize.X,
-					Y:      contentSize.Y,
-					Width:  contentSize.Width,
-					Height: contentSize.Height,
-					Scale:  1,
-				}).Do(ctx)
-
-			if err != nil {
-				return err
-			}
-			return nil
-		}),
-	}
-}

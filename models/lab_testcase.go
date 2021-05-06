@@ -23,6 +23,18 @@ type LabTestcase struct {
 	WaitBefore int `json:"wait_before"`
 }
 
+type LabTestcaseInputImitate struct {
+	TestcaseImgType int `json:"testcase_img_type"`
+	TestcaseWidth int64 `json:"testcase_width"`
+	TestcaseHeight int64 `json:"testcase_height"`
+	TestcaseUrl string `json:"testcase_url"`
+	TestcaseUrlCookies string `json:"testcase_url_cookies"`
+}
+
+type LabTestcaseOutputImitate struct {
+	AcSimilarityRate float64 `json:"ac_similarity_rate"`
+}
+
 func (labTestcase *LabTestcase) GetByIds(testcaseIds []interface{}) ([]LabTestcase, error) {
 	rows, err := DB.Query("SELECT id, testcase_code, testcase_desc, input, output, time_limit, mem_limit, wait_before, status, creator, create_time, update_time FROM lab_testcase WHERE id IN (?"+strings.Repeat(",?", len(testcaseIds)-1)+") AND status = 1", testcaseIds...)
 	defer rows.Close()
