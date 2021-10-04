@@ -23,11 +23,6 @@ if not os.path.exists(sys.argv[2]):
 
 """预定义超参数"""
 IMG_SIZE = 256
-INPUT_SIZE = 224
-BATCH_SIZE = 256
-EPOCHS_SIZE = 32
-BASE_LR = 0.01
-CLASSFIERS = 2
 CUDA = torch.cuda.is_available()
 DEVICE = torch.device('cuda' if CUDA else 'cpu')
 
@@ -60,11 +55,6 @@ user_out = model(image_user_tensor)
 
 test_out_no_grad = test_out.detach()
 user_out_no_grad = user_out.detach()
-
-# test_out_no_grad[0] = test_out_no_grad[0] / np.linalg.norm(test_out_no_grad[0])
-# user_out_no_grad[0] = user_out_no_grad[0] / np.linalg.norm(user_out_no_grad[0])
-# dists = np.linalg.norm(test_out_no_grad[0] - user_out_no_grad[0])
-# print(dists)
 
 norm_diff = np.linalg.norm(test_out_no_grad[0] - user_out_no_grad[0])
 norm1 = np.linalg.norm(test_out_no_grad[0])
