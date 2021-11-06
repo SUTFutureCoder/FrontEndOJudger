@@ -51,7 +51,6 @@ var DatabaseSetting = &Database{}
 type File struct {
 	FileToolType string
 	FileBaseDir string
-	CloudFileBaseUrl string
 }
 
 var FileSetting = &File{}
