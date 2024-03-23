@@ -39,6 +39,12 @@ conf/judger.ini
 
 
 
+### ResNet相似度对比深度学习脚本
+
+imitate_judger.py
+
+
+
 ## 效果预览
 
 ### 题目列表
