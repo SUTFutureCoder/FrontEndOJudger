@@ -31,6 +31,10 @@ https://oj.project256.com/login
 
 请先安装[后端接口](https://github.com/SUTFutureCoder/FrontEndOJGolang) 
 
+```bash
+go run judger.go
+```
+
 
 
 ### 配置
