@@ -103,7 +103,7 @@ conf/judger.ini
 
 当需要评测动画或是动态效果，需要等待一定时间再执行时，系统支持延迟一定时间再评测。
 
-![延迟评测核心流程图](https://github.com/SUTFutureCoder/FrontEndOJGolang/blob/master/sample/image31.png?raw=true)
+![延迟评测核心流程图](https://github.com/SUTFutureCoder/FrontEndOJGolang/blob/master/sample/image34.png?raw=true)
 
 ### 界面相似度对比流程图
 
